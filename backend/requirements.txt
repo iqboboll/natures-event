@@ -3,3 +3,6 @@ uvicorn
 python-dotenv
 groq
 python-multipart
+httpx
+firebase-admin
+pydantic

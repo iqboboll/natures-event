@@ -3,8 +3,8 @@ import asyncio
 from groq import AsyncGroq
 from dotenv import load_dotenv
 
-# Load the user's variables from the backend folder
-load_dotenv(dotenv_path="c:\\Users\\M. Thaqif\\.gemini\\antigravity\\scratch\\flood-alert-system\\backend\\.env")
+# Load variables from the .env file in the backend folder
+load_dotenv()
 
 client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 

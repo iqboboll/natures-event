@@ -52,7 +52,7 @@ async def check_hazard_risk(location: str, weather_data: str):
         return primary_hazard, risk_level, explanation
 
     except Exception as e:
-        return "Unknown", f"Error connecting to AI: {str(e)}"
+        return "Unknown", "Unknown", f"Error connecting to AI: {str(e)}"
 
 async def get_chatbot_response(message: str):
     if not client:

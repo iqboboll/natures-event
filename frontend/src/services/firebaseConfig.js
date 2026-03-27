@@ -12,21 +12,28 @@
 // 5. Enable "Email/Password" sign-in in Authentication > Sign-in method
 // =============================================================================
 
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// TODO: Replace these placeholder values with your actual Firebase project config
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",               // <-- Paste your Firebase API key here
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",  // <-- e.g., "my-app-12345.firebaseapp.com"
-  projectId: "YOUR_PROJECT_ID",                    // <-- e.g., "my-app-12345"
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",    // <-- e.g., "my-app-12345.appspot.com"
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",   // <-- Found in Project Settings > Cloud Messaging
-  appId: "YOUR_APP_ID",                            // <-- Found in Project Settings > General
+  apiKey: "AIzaSyB-kwuiYAhpgjIzK0yhKFivHlhZrE4XpOI",
+  authDomain: "flood-risk-f3fae.firebaseapp.com",
+  projectId: "flood-risk-f3fae",
+  storageBucket: "flood-risk-f3fae.firebasestorage.app",
+  messagingSenderId: "135970584513",
+  appId: "1:135970584513:web:9901c57a37665cbf08e140",
+  measurementId: "G-E486CFRSK9"
 };
 
-// Initialize Firebase App
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
