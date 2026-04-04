@@ -8,15 +8,50 @@ from firebase_admin import auth as fa_auth, messaging
 from firebase_admin.exceptions import FirebaseError
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from utils import calculate_distance
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, timezone, timedelta
+import asyncio
+from typing import Optional, Dict, Any
 
 # Initialize FastAPI App
 app = FastAPI(
     title="Flood Alert System Backend",
-    description="Backend for the Flood Alert App powered by FastAPI and Gemini AI",
+    description="Backend for the Flood Alert App powered by FastAPI and GROQ AI",
     version="1.0.0"
 )
+
+# --- CACHE & DATA REFRESH SYSTEM ---
+RISK_CACHE: Dict[str, Any] = {}
+CACHE_EXPIRATION_MINUTES = 10
+
+async def background_refresh_cache():
+    """
+    Cron Job: Runs every 10 minutes in the background.
+    Refreshes the weather/AI risk for all previously searched locations to keep the cache fully updated.
+    """
+    while True:
+        await asyncio.sleep(600)  # Wait 10 minutes
+        print("[CRON] Refreshing Weather Data Cache...")
+        for location in list(RISK_CACHE.keys()):
+            try:
+                live_weather_data = await get_real_weather(location)
+                primary_hazard, risk_level, explanation = await check_hazard_risk(location, live_weather_data)
+                
+                RISK_CACHE[location] = {
+                    "primary_hazard": primary_hazard,
+                    "risk_level": risk_level,
+                    "explanation": explanation,
+                    "weather_data_used": live_weather_data,
+                    "timestamp": datetime.now(timezone.utc)
+                }
+                print(f"[CRON] Successfully refreshed {location}")
+            except Exception as e:
+                print(f"[CRON] Failed to refresh {location}: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    # Start the background cron job when the server boots up
+    asyncio.create_task(background_refresh_cache())
+# -----------------------------------
 
 # Allow CORS for frontend integration (React/Flutter)
 app.add_middleware(
@@ -65,19 +100,49 @@ async def root():
 @app.post("/api/risk", summary="1. Hazard Risk Checker") #/api/risk
 async def get_risk(request: LocationRequest):
     """
-    User enters location. System fetches live weather and returns the Primary Hazard, Risk Level, and AI explanation.
+    User enters location. System checks the Cache first. If missing/old, fetches live weather 
+    and returns the Primary Hazard, Risk Level, and AI explanation.
     """
-    # Fetch real-time weather data from WeatherAPI.com
-    live_weather_data = await get_real_weather(request.location)
+    loc_key = request.location.lower().strip()
     
+    # 1. CHECK CACHE FIRST (The Data Refresh System)
+    if loc_key in RISK_CACHE:
+        cached_data = RISK_CACHE[loc_key]
+        time_diff = datetime.now(timezone.utc) - cached_data["timestamp"]
+        
+        if time_diff < timedelta(minutes=CACHE_EXPIRATION_MINUTES):
+            print(f"[CACHE HIT] Instantly returning saved data for {loc_key}")
+            return {
+                "location": request.location, 
+                "primary_hazard": cached_data["primary_hazard"],
+                "risk_level": cached_data["risk_level"], 
+                "explanation": cached_data["explanation"],
+                "weather_data_used": cached_data["weather_data_used"],
+                "cached": True
+            }
+            
+    print(f"[CACHE MISS] Fetching fresh API data for {loc_key}...")
+    
+    # 2. FETCH REAL DATA IF NO CACHE
+    live_weather_data = await get_real_weather(request.location)
     primary_hazard, risk_level, explanation = await check_hazard_risk(request.location, live_weather_data)
+    
+    # 3. SAVE TO CACHE FOR NEXT 10 MINUTES
+    RISK_CACHE[loc_key] = {
+        "primary_hazard": primary_hazard,
+        "risk_level": risk_level,
+        "explanation": explanation,
+        "weather_data_used": live_weather_data,
+        "timestamp": datetime.now(timezone.utc)
+    }
     
     return {
         "location": request.location, 
         "primary_hazard": primary_hazard,
         "risk_level": risk_level, 
         "explanation": explanation,
-        "weather_data_used": live_weather_data
+        "weather_data_used": live_weather_data,
+        "cached": False
     }
 
 @app.post("/api/chat", summary="4. Emergency Chatbot") #/api/chat
@@ -103,7 +168,7 @@ async def report_hazard(
         raise HTTPException(status_code=400, detail="File provided is not an image.")
         
     image_bytes = await image.read()
-    hazard, severity, analysis = await analyze_hazard_image(image_bytes, location, image.content_type)
+    hazard, severity, analysis, confidence = await analyze_hazard_image(image_bytes, location, image.content_type)
     
     # Save the report to Firebase Firestore
     db = get_db()
@@ -115,6 +180,7 @@ async def report_hazard(
                 "longitude": longitude,
                 "hazard": hazard,
                 "severity": severity, 
+                "confidence": confidence,
                 "analysis": analysis,
                 "status": "pending_review",
                 "timestamp": datetime.now(timezone.utc)
@@ -152,7 +218,8 @@ async def report_hazard(
     return {
         "location": location, 
         "hazard": hazard,
-        "severity": severity, 
+        "severity": severity,
+        "confidence": confidence,
         "analysis": analysis
     }
 

@@ -73,12 +73,12 @@ async def get_chatbot_response(message: str):
 
 async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: str):
     if not client:
-        return "Unknown", "High", f"Mocked analysis (No GROQ_API_KEY set in .env): The reported hazard at {location} appears severe."
+        return "Unknown", "High", f"Mocked analysis (No GROQ_API_KEY set in .env): The reported hazard at {location} appears severe.", "100%"
         
     try:
         base64_image = base64.b64encode(image_bytes).decode('utf-8')
         
-        prompt = f"Analyze this image from {location} for any natural hazards (Flood, Fire, Storm damage, Drought). Return exactly in this format:\nHazard: <hazard_type>\nSeverity: <level>\nAnalysis: <text>"
+        prompt = f"Analyze this image from {location} for any natural hazards (Flood, Fire, Storm damage, Drought) and state your estimated detection accuracy as a percentage. Return exactly in this format:\nHazard: <hazard_type>\nSeverity: <level>\nConfidence: <0-100%>\nAnalysis: <text>"
 
         response = await client.chat.completions.create(
             # Leaving this as a Llama vision model because Gemma has no vision parameters.
@@ -104,6 +104,7 @@ async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: 
 
         severity = "Unknown"
         hazard = "Unknown"
+        confidence = "Unknown"
         analysis = text
 
         for line in text.split("\n"):
@@ -111,10 +112,12 @@ async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: 
                 severity = line.replace("Severity:", "").strip()
             elif "Hazard:" in line:
                 hazard = line.replace("Hazard:", "").strip()
+            elif "Confidence:" in line:
+                confidence = line.replace("Confidence:", "").strip()
             elif "Analysis:" in line:
                 analysis = line.replace("Analysis:", "").strip()
 
-        return hazard, severity, analysis
+        return hazard, severity, analysis, confidence
 
     except Exception as e:
-        return "Unknown", "Medium", "Image analysis currently unavailable. Please verify manually."
+        return "Unknown", "Medium", "Image analysis currently unavailable. Please verify manually.", "0%"
