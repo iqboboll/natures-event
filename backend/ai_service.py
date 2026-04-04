@@ -1,10 +1,15 @@
 import os
 import base64
 import httpx
+import logging
+import asyncio
 from groq import AsyncGroq # pyright: ignore[reportMissingImports]
 from dotenv import load_dotenv # type: ignore
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize the new Async Groq Client
 api_key = os.getenv("GROQ_API_KEY")
@@ -38,20 +43,27 @@ async def get_evacuation_plan(lat: float, lon: float, hazard: str) -> str:
                 tags = data["elements"][0].get("tags", {})
                 safe_zone_name = tags.get("name", "Nearest Safe facility")
     except Exception as e:
-        print(f"Overpass API error: {e}")
+        logger.error(f"Overpass API error: {e}")
         
     # Ask LLaMA to draft a smart notification
     prompt = f"There is a High severity {hazard} reported near {lat}, {lon}. We found a safe zone: {safe_zone_name}. Draft a brief, 1-sentence urgent emergency evacuation instruction directed at the user, telling them to evacuate to {safe_zone_name}."
     
-    try:
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
-        )
+    response = None
+    for attempt in range(3):
+        try:
+            response = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5,
+            )
+            break
+        except Exception as e:
+            logger.warning(f"Groq API error on evacuation plan attempt {attempt+1}: {e}")
+            await asyncio.sleep(2 ** attempt)
+            
+    if response:
         return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Urgent: {hazard} detected. Please evacuate to {safe_zone_name}."
+    return f"Urgent: {hazard} detected. Please evacuate to {safe_zone_name}."
 
 async def check_hazard_risk(location: str, weather_data: str):
     if not client:
@@ -70,11 +82,21 @@ async def check_hazard_risk(location: str, weather_data: str):
         Explanation: <text>
         """
 
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
+        response = None
+        for attempt in range(3):
+            try:
+                response = await client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                )
+                break
+            except Exception as e:
+                logger.warning(f"Groq API error on hazard risk attempt {attempt+1}: {e}")
+                await asyncio.sleep(2 ** attempt)
+                
+        if not response:
+            raise Exception("Failed to connect to AI after 3 attempts.")
 
         text = response.choices[0].message.content
 
@@ -93,6 +115,7 @@ async def check_hazard_risk(location: str, weather_data: str):
         return primary_hazard, risk_level, explanation
 
     except Exception as e:
+        logger.error(f"Error checking hazard risk: {e}")
         return "Unknown", "Unknown", f"Error connecting to AI: {str(e)}"
 
 async def get_chatbot_response(message: str):
@@ -120,16 +143,28 @@ async def get_chatbot_response(message: str):
     Always provide Malaysian emergency numbers (e.g., 999 or 994) mentioned in the guidelines. Provide helpful, concise safety advice."""
 
     try:
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
-            temperature=0.3, # lower temperature for factual RAG responses
-        )
+        response = None
+        for attempt in range(3):
+            try:
+                response = await client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    temperature=0.3, # lower temperature for factual RAG responses
+                )
+                break
+            except Exception as e:
+                logger.warning(f"Groq API error on chatbot attempt {attempt+1}: {e}")
+                await asyncio.sleep(2 ** attempt)
+                
+        if not response:
+            raise Exception("Failed to connect to AI after 3 attempts.")
+            
         return response.choices[0].message.content
     except Exception as e:
+        logger.error(f"Error in chatbot response: {e}")
         return f"Error: {str(e)}"
 
 async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: str):
@@ -141,25 +176,35 @@ async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: 
         
         prompt = f"Analyze this image from {location} for any natural hazards (Flood, Fire, Storm damage, Drought) and state your estimated detection accuracy as a percentage. Return exactly in this format:\nHazard: <hazard_type>\nSeverity: <level>\nConfidence: <0-100%>\nAnalysis: <text>"
 
-        response = await client.chat.completions.create(
-            # Leaving this as a Llama vision model because Gemma has no vision parameters.
-            model="llama-3.2-11b-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
+        response = None
+        for attempt in range(3):
+            try:
+                response = await client.chat.completions.create(
+                    # Leaving this as a Llama vision model because Gemma has no vision parameters.
+                    model="llama-3.2-11b-vision-preview",
+                    messages=[
                         {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{content_type};base64,{base64_image}",
-                            },
-                        },
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{content_type};base64,{base64_image}",
+                                    },
+                                },
+                            ],
+                        }
                     ],
-                }
-            ],
-            temperature=0.5,
-        )
+                    temperature=0.5,
+                )
+                break
+            except Exception as e:
+                logger.warning(f"Groq API error on image analysis attempt {attempt+1}: {e}")
+                await asyncio.sleep(2 ** attempt)
+                
+        if not response:
+            raise Exception("Failed to connect to AI after 3 attempts.")
 
         text = response.choices[0].message.content
 
@@ -181,4 +226,5 @@ async def analyze_hazard_image(image_bytes: bytes, location: str, content_type: 
         return hazard, severity, analysis, confidence
 
     except Exception as e:
+        logger.error(f"Error analyzing hazard image: {e}")
         return "Unknown", "Medium", "Image analysis currently unavailable. Please verify manually.", "0%"

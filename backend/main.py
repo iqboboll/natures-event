@@ -10,7 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from utils import calculate_distance
 from datetime import datetime, timezone, timedelta
 import asyncio
+import logging
 from typing import Optional, Dict, Any
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -30,7 +34,7 @@ async def background_refresh_cache():
     """
     while True:
         await asyncio.sleep(600)  # Wait 10 minutes
-        print("[CRON] Refreshing Weather Data Cache...")
+        logger.info("[CRON] Refreshing Weather Data Cache...")
         for location in list(RISK_CACHE.keys()):
             try:
                 live_weather_data = await get_real_weather(location)
@@ -43,9 +47,9 @@ async def background_refresh_cache():
                     "weather_data_used": live_weather_data,
                     "timestamp": datetime.now(timezone.utc)
                 }
-                print(f"[CRON] Successfully refreshed {location}")
+                logger.info(f"[CRON] Successfully refreshed {location}")
             except Exception as e:
-                print(f"[CRON] Failed to refresh {location}: {e}")
+                logger.error(f"[CRON] Failed to refresh {location}: {e}")
 
 @app.on_event("startup")
 async def startup_event():
@@ -111,7 +115,7 @@ async def get_risk(request: LocationRequest):
         time_diff = datetime.now(timezone.utc) - cached_data["timestamp"]
         
         if time_diff < timedelta(minutes=CACHE_EXPIRATION_MINUTES):
-            print(f"[CACHE HIT] Instantly returning saved data for {loc_key}")
+            logger.info(f"[CACHE HIT] Instantly returning saved data for {loc_key}")
             return {
                 "location": request.location, 
                 "primary_hazard": cached_data["primary_hazard"],
@@ -121,7 +125,7 @@ async def get_risk(request: LocationRequest):
                 "cached": True
             }
             
-    print(f"[CACHE MISS] Fetching fresh API data for {loc_key}...")
+    logger.info(f"[CACHE MISS] Fetching fresh API data for {loc_key}...")
     
     # 2. FETCH REAL DATA IF NO CACHE
     live_weather_data = await get_real_weather(request.location)
@@ -170,6 +174,20 @@ async def report_hazard(
     image_bytes = await image.read()
     hazard, severity, analysis, confidence = await analyze_hazard_image(image_bytes, location, image.content_type)
     
+    # --- INTELLIGENCE LAYER (CONFIDENCE FAIL-SAFE) ---
+    parsed_conf = 100
+    try:
+        conf_str = confidence.replace("%", "").strip()
+        if conf_str.isdigit():
+            parsed_conf = int(conf_str)
+    except Exception as e:
+        logger.warning(f"Failed to parse confidence value '{confidence}': {e}")
+        
+    if parsed_conf < 70 and "high" in severity.lower():
+        severity = "Medium"
+        analysis += "\n\n⚠️ **System Note:** Severity automatically downgraded from High to Medium due to low AI confidence (<70%)."
+        logger.warning(f"Downgraded severity to Medium for {location}. Confidence was {parsed_conf}%.")
+
     # --- AUTONOMOUS AGENTIC WORKFLOW ---
     smart_alert_body = f"A High-severity {hazard} was just reported nearby in {location}."
     
@@ -219,12 +237,12 @@ async def report_hazard(
                             )
                             try:
                                 messaging.send(message)
-                                print(f"Sent 10km Push Notification to user {user_doc.id}")
+                                logger.info(f"Sent 10km Push Notification to user {user_doc.id}")
                             except Exception as e:
-                                print(f"Error sending FCM to {user_doc.id}: {e}")
+                                logger.error(f"Error sending FCM to {user_doc.id}: {e}")
 
         except Exception as e:
-            print(f"Error saving to Firestore: {e}")
+            logger.error(f"Error saving to Firestore: {e}")
 
     return {
         "location": location, 
