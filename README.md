@@ -17,12 +17,19 @@ Built with React (Vite) and FastAPI, the system leverages AI (Groq API using LLa
 ### 2. AI-Powered Emergency Services (Agentic Backend)
 - **Hazard Risk Checker (`/api/risk`):** 
   - Acts as a rules-engine processing live meteorological telemetry (temperature, wind, humidity via WeatherAPI) against local thresholds (e.g. MET Malaysia FDRS) to autonomously grade risks. 
+- **Retrieval-Augmented Generation (RAG) Chatbot (`/api/chat`):**
+  - An emergency assistant grounded entirely in official Malaysian disaster protocols (NADMA). It reads from a localized `knowledge_base.txt` to strictly eliminate hallucinations and dynamically provide standard operating procedures for floods, wildfires, and landslides.
 - **Hazard Image Triaging (`/api/report`):** 
-  - Instead of relying on manual operator sorting, LLaMA 3.2 Vision acts as an automated triaging agent. When a panicked user uploads a photo, it instantaneously categorizes the hazard type and extracts severity logic.
+  - LLaMA 3.2 Vision acts as an automated triaging agent parsing unstructured image data from panicking users to instantaneously categorize hazard types, extract severity logic, and assign a calculated **Confidence Interval (%)**.
 - **Autonomous Agentic Workflow (Overpass API Integration):**
   - If the Vision model detects a "High" severity hazard, it triggers a multi-step agentic loop. The backend autonomously queries the OpenStreetMap Overpass API for the nearest hospital or police station using the user's coordinates, and uses LLaMA to draft a hyper-localized escape route instruction.
 
-### 3. Real-Time Proximity Alerts & Firebase Integration
+### 3. Enterprise-Grade System Reliability
+- **The Intelligence Failsafe:** Before pushing alerts, the system validates the AI's confidence score. If the Vision AI is less than 70% confident, the backend explicitly downgrades the emergency severity, acting as a crucial fail-safe against AI hallucinations and preventing false 10km warning alarms.
+- **Resilient AI Orchestration:** All external Groq/LLaMA calls are wrapped in Exponential Backoff Retry Loops, guaranteeing backend stability and self-healing behaviors during live network drops.
+- **Professional Observability:** System operations use standard Python logging modules rather than standard outputs for clear, timestamped production observability.
+
+### 4. Real-Time Proximity Alerts & Firebase Integration
 - **Community Incident Reporting:** If the Image Triaging detects a "High" severity hazard, the backend calculates the distance to all registered users.
 - **Smart Push Notifications (FCM):** Using Firebase Cloud Messaging, the system instantly pushes the Agent-generated evacuation route to the mobile devices of users living within a 10km danger zone.
 - **Authentication & Database:** Firebase Authentication handles secure user sign-ups and logins, while Firestore persists user profiles, locations, and hazard reports.
