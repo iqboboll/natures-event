@@ -306,3 +306,66 @@ async def get_me(token: dict = Depends(verify_token)):
         "email": token.get("email")
     }
 
+@app.get("/api/news", summary="Dynamic AI News Feed")
+async def get_news_feed():
+    """
+    Fetches the 8 most recent disaster reports from Firestore
+    and formats them for the frontend NewsFeed component.
+    """
+    db = get_db()
+    if not db:
+        return []
+
+    try:
+        # Fetch latest 8 reports sorted by timestamp descending
+        from google.cloud.firestore_v1.base_query import FieldFilter, BaseCompositeFilter # type: ignore
+        from google.cloud import firestore # type: ignore
+        
+        reports_ref = db.collection("reports").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(8).stream()
+        
+        news_items = []
+        for r in reports_ref:
+            doc = r.to_dict()
+            hazard = doc.get("hazard", "EVENT").upper()
+            severity = doc.get("severity", "Medium")
+            location = doc.get("location", "Unknown Location")
+            
+            # Format Time
+            now = datetime.now(timezone.utc)
+            timestamp = doc.get("timestamp")
+            time_str = "JUST NOW"
+            if timestamp:
+                # Firestore returns DatetimeWithNanoseconds which acts like standard datetime
+                diff = now - timestamp
+                mins = int(diff.total_seconds() / 60)
+                if mins < 1:
+                    time_str = "JUST NOW"
+                elif mins < 60:
+                    time_str = f"{mins} MIN AGO"
+                elif mins < 1440:
+                    time_str = f"{mins // 60} HOURS AGO"
+                else:
+                    time_str = f"{mins // 1440} DAYS AGO"
+
+            # Assign Styling Based on Severity
+            if "high" in severity.lower():
+                tag_color = "var(--accent-red)"
+                text = f"HIGH SEVERITY {hazard} reported in {location}."
+            elif "low" in severity.lower():
+                tag_color = "var(--accent-green)"
+                text = f"Minor {hazard} reported in {location}. Monitoring."
+            else:
+                tag_color = "var(--accent-orange)"
+                text = f"Unverified {hazard} incident reported in {location}."
+
+            news_items.append({
+                "time": time_str,
+                "text": text,
+                "tag": hazard,
+                "tagColor": tag_color
+            })
+            
+        return news_items
+    except Exception as e:
+        logger.error(f"Error fetching news feed: {e}")
+        return []

@@ -133,3 +133,20 @@ export async function getAuthenticatedUser(idToken) {
     throw err;
   }
 }
+
+// -----------------------------------------------------------------------------
+// 6. LIVE AI NEWS FEED — GET /api/news
+//    Returns: Array of formatted incident objects from Firestore
+// -----------------------------------------------------------------------------
+export async function getLiveNews() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/news`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error(`News API error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("getLiveNews failed:", err);
+    return [];
+  }
+}

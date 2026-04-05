@@ -1,20 +1,43 @@
+import { useState, useEffect } from 'react';
+import { getLiveNews } from '../services/api';
+
 export default function NewsFeed() {
-  const news = [
-    { time: '2 MIN AGO',  text: 'Heavy rain detected in Kuala Lumpur — 45mm recorded in the last hour.',            tag: 'FLOOD', tagColor: 'var(--accent-blue)' },
-    { time: '18 MIN AGO', text: 'Minor tremor (2.1 magnitude) reported near Ranau fault line, Sabah.',              tag: 'SEISMIC', tagColor: 'var(--accent-red)' },
-    { time: '35 MIN AGO', text: 'NADMA issues advisory for coastal areas in Terengganu ahead of monsoon surge.',    tag: 'MONSOON', tagColor: 'var(--accent-gold)' },
-    { time: '1 HOUR AGO', text: 'Kelantan River level rising — current reading 8.2m (danger level: 9.0m).',         tag: 'FLOOD', tagColor: 'var(--accent-blue)' },
-    { time: '1.5H AGO',   text: 'Satellite imagery detects cloud formation consistent with cyclonic activity.',      tag: 'WEATHER', tagColor: 'var(--accent-purple)' },
-    { time: '2 HOURS AGO',text: 'Air quality index in Muar reaches 158 (Unhealthy). Open burning suspected.',       tag: 'AIR', tagColor: 'var(--accent-orange)' },
-    { time: '3 HOURS AGO',text: 'JPS deploys portable pumps to Shah Alam drainage system.',                         tag: 'RESPONSE', tagColor: 'var(--accent-green)' },
-    { time: '4 HOURS AGO',text: 'DID reports 312 river monitoring stations active across Peninsular Malaysia.',      tag: 'SENSORS', tagColor: 'var(--accent-cyan)' },
-  ];
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const liveNews = await getLiveNews();
+        if (liveNews && liveNews.length > 0) {
+          setNews(liveNews);
+        } else {
+          // Fallback if database is empty or backend is offline
+          setNews([
+            { time: 'JUST NOW', text: 'Waiting for live incident reports...', tag: 'SYSTEM', tagColor: 'var(--accent-blue)' },
+            { time: '1 HOUR AGO', text: 'Backend connected. Database synchronization active.', tag: 'NODE', tagColor: 'var(--accent-green)' },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch news:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchNews();
+    
+    // Poll every 30 seconds for live updates
+    const intervalId = setInterval(fetchNews, 30000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <div className="panel">
       <div className="panel-header">
         <span className="panel-header__title">AI Live News Feed</span>
-        <span className="panel-header__badge panel-header__badge--live">LIVE</span>
+        <span className="panel-header__badge panel-header__badge--live">
+          {loading ? 'SYNCING POSTS...' : 'LIVE'}
+        </span>
       </div>
       <div className="panel-body">
         {news.map((n, i) => (
