@@ -9,7 +9,7 @@ Built with React (Vite) and FastAPI, the system leverages AI (Groq API using LLa
 - **Map View:** Interactive map integration using React Leaflet to visualize active incidents and spatial data.
 - **Sensor Grid & Risk Gauges:** Real-time visualization of environmental metrics and automated risk level gauges.
 - **Location Data Analytics:** Dynamic charting via Plotly.js for deep-diving into historical or forecast metrics.
-- **News Feed & Alert Summary:** Aggregated panels for staying updated on the latest regional emergency broadcasts.
+- **Global AI News Feed:** Direct API integration with the **United Nations ReliefWeb API** to stream real-time, global disaster and humanitarian alerts directly to the dashboard alongside community events.
 
 *(Recommendation for frontend developers: Insert GIF of the Interactive Dashboard mapping here)*
 `[INSERT DASHBOARD UI GIF HERE]`
@@ -18,7 +18,9 @@ Built with React (Vite) and FastAPI, the system leverages AI (Groq API using LLa
 - **Hazard Risk Checker (`/api/risk`):** 
   - Acts as a rules-engine processing live meteorological telemetry (temperature, wind, humidity via WeatherAPI) against local thresholds (e.g. MET Malaysia FDRS) to autonomously grade risks. 
 - **Retrieval-Augmented Generation (RAG) Chatbot (`/api/chat`):**
-  - An emergency assistant grounded entirely in official Malaysian disaster protocols (NADMA). It reads from a localized `knowledge_base.txt` to strictly eliminate hallucinations and dynamically provide standard operating procedures for floods, wildfires, and landslides.
+  - An emergency assistant grounded entirely in official Malaysian disaster protocols (NADMA). It reads from a localized `knowledge_base.txt` to eliminate hallucinations. 
+  - **Live Sensor Fusion:** If a user asks about a specific location, the Chatbot intercepts the query, pulls real-time weather telemetry for that specific city via API, and injects the live radar data into its neural prompt to give accurate, hyper-localized safety verdicts.
+  - **Auto-Bilingual:** Flawlessly mirrors the user's language (English or Bahasa Melayu) dynamically without forcing translations.
 - **Hazard Image Triaging (`/api/report`):** 
   - LLaMA 3.2 Vision acts as an automated triaging agent parsing unstructured image data from panicking users to instantaneously categorize hazard types, extract severity logic, and assign a calculated **Confidence Interval (%)**.
 - **Autonomous Agentic Workflow (Overpass API Integration):**
@@ -81,6 +83,11 @@ Start the Vite development server:
 npm run dev
 ```
 *(The dashboard will be available at `http://localhost:5173`)*
+
+### 3. Production Deployment (Vercel + Render)
+For hackathon deployment:
+1. **Backend (Render):** Deploy the FastAPI backend on Render.com as a Web Service. Add your `.env` variables and upload the `firebase-service-account.json` file securely via Render's "Secret Files" functionality.
+2. **Frontend (Vercel):** Deploy the Vite React app on Vercel. In the Vercel dashboard, add an Environment Variable named `VITE_API_BASE_URL` pointing strictly to your live Render backend URL.
 
 ## 💡 How It Works
 1. **User Flow:** A user registers via the frontend, providing their home coordinates. This data is securely stored in Firestore.
