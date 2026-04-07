@@ -75,6 +75,8 @@ async def check_hazard_risk(location: str, weather_data: str):
         determine the primary natural hazard risk (e.g., Flood, Heatwave, Drought, Storm, Wildfire, or None)
         and the overall risk level (Low, Medium, High). 
         * Note: For Wildfire risk, emulate the MET Malaysia FDRS (Fire Danger Rating System) by carefully analyzing if the temperature is high, humidity is very low, and winds are strong. Explain briefly.
+        
+        CRITICAL RULE: The weather data contains a [CONFIRMED LOCATION]. You MUST ONLY discuss that exact location name in your explanation. Do NOT hallucinate or assume Kuala Lumpur unless the confirmed location is explicitly Kuala Lumpur. Keep your explanation focused on the confirmed location.
 
         Format:
         Hazard: <hazard_type>
@@ -132,18 +134,40 @@ async def get_chatbot_response(message: str):
     except Exception as e:
         print(f"RAG Knowledge Base not found or unreadable: {e}")
         
+    # --- LIVE SENSOR FUSION ---
+    # Quickly check if the user is asking about a specific location
+    live_weather_data = "No specific location mentioned, no live radar data pulled."
+    try:
+        loc_response = await client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Extract the specific city or location requested in the user's message. Reply ONLY with the location name. If no location is mentioned, reply EXACTLY with the word 'NONE'."},
+                {"role": "user", "content": message}
+            ],
+            temperature=0.0,
+        )
+        extraction = loc_response.choices[0].message.content.strip()
+        if extraction and extraction.upper() != "NONE" and "NONE" not in extraction.upper():
+            # Dynamically pull the live weather for the requested location
+            from weather_service import get_real_weather
+            live_weather_data = await get_real_weather(extraction)
+    except Exception as e:
+        logger.warning(f"Location extraction sequence failed: {e}")
+
     system_prompt = f"""You are a National Emergency Assistant for Malaysia. 
     Use the following official NADMA guidelines to answer the user's questions. 
-    If the answer is not in the guidelines, provide general, safe emergency advice.
     
     [OFFICIAL GUIDELINES CONTEXT]
     {rag_context}
     [END CONTEXT]
     
-    CRITICAL RULE: You must automatically analyze the language of the user's prompt (e.g., Bahasa Melayu, Mandarin, Tamil, or English). 
-    You MUST reply entirely in the exact same language they used to speak to you. 
-    Translate the official guidelines and Malaysian emergency numbers (e.g., 999 or 994) natively into their language with cultural empathy. 
-    Provide helpful, concise safety advice."""
+    [LIVE SENSOR/WEATHER DATA]
+    {live_weather_data}
+    * If the user asks if there is a flood/emergency in a location, use this live weather data to answer.
+    * If precipitation/rain is low and there is no severe risk, concisely answer NO. DO NOT list emergency numbers or evacuation rules if the area is safe. Just tell them it is currently safe.
+    [END SENSOR DATA]
+    
+    CRITICAL TRANSLATION RULE: You must precisely match the language of the user's prompt. If they speak English, reply strictly in English. If they speak Bahasa Melayu, reply strictly in Bahasa Melayu. Do not cross languages. Provide helpful, concise safety advice."""
 
     try:
         response = None
