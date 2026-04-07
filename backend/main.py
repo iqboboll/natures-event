@@ -306,14 +306,22 @@ async def get_me(token: dict = Depends(verify_token)):
         "email": token.get("email")
     }
 
-@app.get("/api/news", summary="Dynamic AI News Feed")
+@app.get("/api/news", summary="Dynamic AI News Feed (UN ReliefWeb)")
 async def get_news_feed():
-    """
-    Fetches the 8 most recent disaster reports from Firestore
-    and formats them for the frontend NewsFeed component.
-    """
-    db = get_db()
-    if not db:
+    import httpx
+    url = "https://api.reliefweb.int/v1/reports?appname=flood-alert-system&query[value]=Malaysia+OR+flood+OR+monsoon+OR+disaster&preset=latest&limit=8&profile=list"
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=5.0)
+            if response.status_code != 200: return []
+            data = response.json()
+            articles = data.get("data", [])
+            news_items = []
+            for article in articles:
+                title = article.get("fields", {}).get("title", "Unknown Alert")
+                news_items.append({"time": "JUST NOW", "text": title, "tag": "GLOBAL ALERT", "tagColor": "var(--accent-red)"})
+            return news_items
+    except:
         return []
 
     try:

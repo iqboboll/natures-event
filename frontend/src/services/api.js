@@ -1,9 +1,8 @@
 // =============================================================================
 // API SERVICE — Centralized connection to the FastAPI Backend
 // =============================================================================
-// IMPORTANT: Set this to your backend URL when running the FastAPI server.
-// Default: http://localhost:8000  (run: uvicorn main:app --reload)
-const API_BASE_URL = "http://localhost:8000";
+// Automatically connect to the Live Backend if deployed on Vercel, otherwise Localhost.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // -----------------------------------------------------------------------------
 // 1. HAZARD RISK CHECK — POST /api/risk
