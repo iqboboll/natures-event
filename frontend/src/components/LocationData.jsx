@@ -32,7 +32,7 @@ function PlotlyChart({ data, layout }) {
 
 export default function LocationData() {
   const [riskData, setRiskData] = useState(null);
-  const [location, setLocation] = useState('Kuala Lumpur');
+  const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
@@ -54,9 +54,11 @@ export default function LocationData() {
   }, []);
 
   useEffect(() => {
-    fetchRisk(location);
+    if (location) {
+      fetchRisk(location);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally fetch only on mount
+  }, []); // Intentionally fetch only on mount if location is set
 
   // Parse weather data from API response for metric cards
   const weatherMetrics = useMemo(() => {
@@ -74,13 +76,16 @@ export default function LocationData() {
 
   // Calculate risk score from risk_level
   const riskScore = useMemo(() => {
-    if (!riskData?.risk_level) return 72;
+    // Return 0 if location is empty or contains numbers/special characters
+    if (!location.trim() || !/^[a-zA-Z\s\-]+$/.test(location)) return 0;
+    
+    if (!riskData?.risk_level) return 0;
     const level = riskData.risk_level.toLowerCase();
     if (level.includes('high')) return 85;
     if (level.includes('medium')) return 55;
     if (level.includes('low')) return 25;
-    return 72;
-  }, [riskData]);
+    return 0;
+  }, [riskData, location]);
 
   const scoreColor = riskScore >= 70 ? 'var(--accent-red)' : riskScore >= 40 ? 'var(--accent-orange)' : 'var(--accent-green)';
 
@@ -120,12 +125,13 @@ export default function LocationData() {
             ref={inputRef}
             className="map-search__input"
             style={{ width: '100%', fontSize: '10px', padding: '6px 10px' }}
-            placeholder="Enter location for risk analysis..."
+            placeholder="ENTER YOUR LOCATION"
             defaultValue={location}
             onKeyDown={e => {
               if (e.key === 'Enter') {
-                setLocation(e.target.value);
-                fetchRisk(e.target.value);
+                const val = e.target.value.trim();
+                setLocation(val);
+                fetchRisk(val);
               }
             }}
           />
