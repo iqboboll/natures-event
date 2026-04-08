@@ -1,4 +1,6 @@
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { checkHazardRisk } from '../services/api';
+
  
 // Simple hash function to generate a numeric seed from a string
 const getSeed = (str) => {
