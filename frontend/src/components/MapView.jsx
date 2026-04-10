@@ -87,7 +87,7 @@ function FlyTo({ center }) {
   return null;
 }
 
-export default function MapView() {
+export default function MapView({ onSearch }) {
   const [searchVal, setSearchVal] = useState('');
   const [flyTarget, setFlyTarget] = useState(null);
   const [tacticalMode, setTacticalMode] = useState('standard');
@@ -102,12 +102,17 @@ export default function MapView() {
       );
       const data = await res.json();
       if (data.length > 0) {
-        setFlyTarget([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        setFlyTarget(coords);
+        // Call the parent's unified search handler
+        if (typeof onSearch === 'function') {
+          onSearch(searchVal);
+        }
       }
     } catch (err) {
       console.error('Geocoding failed:', err);
     }
-  }, [searchVal]);
+  }, [searchVal, onSearch]);
 
   // Style constants
   const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';

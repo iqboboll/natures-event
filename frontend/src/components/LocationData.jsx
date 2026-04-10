@@ -42,40 +42,14 @@ function PlotlyChart({ data, layout }) {
   return <div ref={containerRef} style={{ width: '100%', minHeight: 120 }} />;
 }
 
-export default function LocationData() {
-  const [riskData, setRiskData] = useState(null);
-  const [location, setLocation] = useState('');
-  const [loading, setLoading] = useState(false);
-  const inputRef = useRef(null);
-
+export default function LocationData({ location, riskData, loading }) {
   // Default values for initial or invalid states
   const defaultWeather = { windSpeed: 'Unknown', temp: 'Unknown', humidity: 'Unknown' };
 
-  // Fetch risk from backend API
-  const fetchRisk = useCallback(async (loc) => {
-    setLoading(true);
-    try {
-      // This calls POST /api/risk on the FastAPI backend
-      // Backend requires GROQ_API_KEY and WEATHER_API_KEY in .env
-      const data = await checkHazardRisk(loc);
-      setRiskData(data);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  }, []);
-
   // Centralized validation for the location string
   const isValidLocation = useMemo(() => {
-    return !!location.trim() && /^[a-zA-Z\s\-]+$/.test(location);
+    return !!location?.trim() && /^[a-zA-Z\s\-]+$/.test(location);
   }, [location]);
-
-  useEffect(() => {
-    if (location && isValidLocation) {
-      fetchRisk(location);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally fetch only on mount if location is set
 
   // Parse weather data from API response for metric cards
   const weatherMetrics = useMemo(() => {
@@ -178,24 +152,6 @@ export default function LocationData() {
         {loading && <span className="spinner" />}
       </div>
       <div className="panel-body">
-        {/* Location search within this panel */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-          <input
-            ref={inputRef}
-            className="map-search__input"
-            style={{ width: '100%', fontSize: '10px', padding: '6px 10px' }}
-            placeholder="ENTER YOUR LOCATION"
-            defaultValue={location}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                const val = e.target.value.trim();
-                setLocation(val);
-                fetchRisk(val);
-              }
-            }}
-          />
-        </div>
-
         {/* Risk Score */}
         <div className="risk-score">
           <div>
@@ -210,7 +166,7 @@ export default function LocationData() {
               <div className="risk-score__indicator" style={{ left: `${riskScore}%` }} />
             </div>
             <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.4 }}>
-              {isValidLocation ? (riskData?.explanation || 'Loading analysis...') : 'Invalid location. Please enter a valid city or district name (e.g., Kuala Lumpur).'}
+              {isValidLocation ? (riskData?.explanation || 'Loading analysis...') : 'Enter a location in the map search bar to view risk analytics.'}
             </div>
           </div>
         </div>

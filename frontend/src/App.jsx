@@ -19,6 +19,11 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const dashRef = useRef(null);
 
+  // SHARED STATE FOR UNIFIED SEARCH
+  const [sharedLocation, setSharedLocation] = useState('');
+  const [sharedRiskData, setSharedRiskData] = useState(null);
+  const [loadingRisk, setLoadingRisk] = useState(false);
+
   // Track viewport width for mobile detection
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -49,6 +54,22 @@ export default function App() {
     console.log('Logged in:', userData.email);
   };
 
+  // UNIFIED SEARCH HANDLER
+  const handleUnifiedSearch = async (loc) => {
+    if (!loc) return;
+    setSharedLocation(loc);
+    setLoadingRisk(true);
+    try {
+      const { checkHazardRisk } = await import('./services/api');
+      const data = await checkHazardRisk(loc);
+      setSharedRiskData(data);
+    } catch (err) {
+      console.error('Unified search failed:', err);
+    } finally {
+      setLoadingRisk(false);
+    }
+  };
+
   return (
     <div className="dashboard" ref={dashRef}>
       {/* Top Header Bar */}
@@ -66,7 +87,7 @@ export default function App() {
 
       {/* Central Map View — ErrorBoundary must inherit grid-area */}
       <ErrorBoundary fallback="Map failed to load">
-        <MapView />
+        <MapView onSearch={handleUnifiedSearch} />
       </ErrorBoundary>
 
       {/* Right Sidebar: Chatbot (hidden on mobile) + Alert Summary */}
@@ -81,7 +102,11 @@ export default function App() {
           <NewsFeed />
         </ErrorBoundary>
         <ErrorBoundary fallback="Location Data unavailable">
-          <LocationData />
+          <LocationData 
+            location={sharedLocation} 
+            riskData={sharedRiskData} 
+            loading={loadingRisk} 
+          />
         </ErrorBoundary>
         <ErrorBoundary fallback="Image Analyzer unavailable">
           <ImageAnalyzer />

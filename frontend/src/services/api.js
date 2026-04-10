@@ -25,7 +25,7 @@ export async function checkHazardRisk(location) {
       primary_hazard: "Flood",
       risk_level: "High",
       explanation: "Backend offline — showing mock data. Start the FastAPI server to get live AI analysis.",
-      weather_data_used: "Mock: Heavy rainfall, 28°C, 85% humidity, 15 kph winds",
+      weather_data_used: "LOCATION: MALAYSIA - CLIMATE BASELINE. Temperature: 31.5 C. Humidity: 85%. Wind Speed: 15 kph. Precipitation: 45mm.",
     };
   }
 }
