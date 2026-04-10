@@ -31,6 +31,31 @@ const icons = {
   flood: createIcon('#0099ff'),
   monsoon: createIcon('#d4a843'),
   station: createIcon('#00e676'),
+  user: L.divIcon({
+    className: 'user-marker',
+    html: `
+      <div class="sonar-pulse"></div>
+      <div style="
+        width: 24px; height: 24px; 
+        background: #00d4ff; 
+        border: 3px solid #fff; 
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+      ">
+        <div style="
+          width: 8px; height: 8px; 
+          background: #fff; 
+          border-radius: 50%;
+          transform: rotate(45deg);
+        "></div>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24],
+  }),
 };
 
 // Malaysia-focused disaster pins (sample data)
@@ -58,20 +83,20 @@ const arcs = [
 // Component to fly to searched location
 function FlyTo({ center }) {
   const map = useMap();
-  if (center) map.flyTo(center, 12, { duration: 1.5 });
+  if (center) map.flyTo(center, 14, { duration: 1.5 });
   return null;
 }
 
 export default function MapView() {
   const [searchVal, setSearchVal] = useState('');
   const [flyTarget, setFlyTarget] = useState(null);
+  const [tacticalMode, setTacticalMode] = useState('standard');
 
   // Simple geocoding via Nominatim (free, no key required)
   const handleSearch = useCallback(async () => {
     if (!searchVal.trim()) return;
     try {
       // NOTE: For production, use a proper geocoding API (Google, Mapbox, etc.)
-      // Nominatim is free but has rate limits. Add your own geocoding key if needed.
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchVal)}&limit=1`
       );
@@ -85,12 +110,32 @@ export default function MapView() {
   }, [searchVal]);
 
   // Dark-styled CartoDB tile layer (free, no API key needed)
-  // ALTERNATIVE: If you want to use Mapbox, replace the URL below with:
-  // https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=YOUR_MAPBOX_TOKEN
   const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
   return (
-    <div className="map-area">
+    <div className={`map-area map-${tacticalMode}`}>
+      {/* Tactical Style Switcher */}
+      <div className="map-switcher">
+        <button 
+          className={`map-switcher__btn ${tacticalMode === 'standard' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setTacticalMode('standard')}
+        >
+          CORE
+        </button>
+        <button 
+          className={`map-switcher__btn ${tacticalMode === 'noir' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setTacticalMode('noir')}
+        >
+          NOIR
+        </button>
+        <button 
+          className={`map-switcher__btn ${tacticalMode === 'emerald' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setTacticalMode('emerald')}
+        >
+          EMERALD
+        </button>
+      </div>
+
       {/* Search Overlay */}
       <div className="map-search">
         <input
@@ -118,6 +163,18 @@ export default function MapView() {
 
         {/* Fly to searched location */}
         <FlyTo center={flyTarget} />
+
+        {/* User Search Marker (Person Figure) */}
+        {flyTarget && (
+          <Marker position={flyTarget} icon={icons.user}>
+            <Popup autoOpen>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', textAlign: 'center' }}>
+                <strong style={{ color: 'var(--accent-cyan)' }}>SEARCHED LOCATION</strong><br />
+                <span>LAT: {flyTarget[0].toFixed(4)} <br/> LON: {flyTarget[1].toFixed(4)}</span>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         {/* Disaster markers */}
         {markers.map((m, i) => (

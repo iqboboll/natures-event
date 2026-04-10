@@ -1491,3 +1491,75 @@ body {
   }
 }
 
+/* --- Map User Marker --- */
+.user-marker {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 10px var(--accent-cyan));
+}
+
+.sonar-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: var(--accent-cyan-glow);
+  border-radius: 50%;
+  animation: sonar 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes sonar {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+}
+
+/* --- Tactical Map Switcher --- */
+.map-noir .leaflet-tile-container {
+  filter: grayscale(100%) brightness(0.6) contrast(1.6) invert(100%) hue-rotate(180deg);
+}
+.map-emerald .leaflet-tile-container {
+  filter: sepia(100%) hue-rotate(70deg) saturate(4) brightness(0.4) contrast(1.2);
+}
+
+.map-switcher {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 1px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  z-index: 1000;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.map-switcher__btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.map-switcher__btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+
+.map-switcher__btn--active {
+  background: var(--accent-cyan-glow);
+  color: var(--accent-cyan);
+  box-shadow: inset 0 0 10px rgba(0,212,255,0.2);
+}
+
+
