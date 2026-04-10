@@ -109,30 +109,25 @@ export default function MapView() {
     }
   }, [searchVal]);
 
-  // Dark-styled CartoDB tile layer (free, no API key needed)
+  // Style constants
   const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   return (
     <div className={`map-area map-${tacticalMode}`}>
-      {/* Tactical Style Switcher */}
+      {/* Map Mode Switcher */}
       <div className="map-switcher">
         <button 
           className={`map-switcher__btn ${tacticalMode === 'standard' ? 'map-switcher__btn--active' : ''}`}
           onClick={() => setTacticalMode('standard')}
         >
-          CORE
+          DARK
         </button>
         <button 
-          className={`map-switcher__btn ${tacticalMode === 'noir' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => setTacticalMode('noir')}
+          className={`map-switcher__btn ${tacticalMode === 'street' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setTacticalMode('street')}
         >
-          NOIR
-        </button>
-        <button 
-          className={`map-switcher__btn ${tacticalMode === 'emerald' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => setTacticalMode('emerald')}
-        >
-          EMERALD
+          STREET
         </button>
       </div>
 
@@ -148,16 +143,17 @@ export default function MapView() {
         <button className="map-search__btn" onClick={handleSearch}>SEARCH</button>
       </div>
 
-      {/* Leaflet Map */}
+      {/* Leaflet Map - Re-mounting MapContainer ensures TileLayer swap is perfect */}
       <MapContainer
+        key={tacticalMode}
         center={[4.2105, 103.5]} // Center of Malaysia
         zoom={7}
         style={{ width: '100%', height: '100%' }}
         zoomControl={true}
       >
         <TileLayer
-          url={DARK_TILES}
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          url={tacticalMode === 'street' ? LIGHT_TILES : DARK_TILES}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           maxZoom={19}
         />
 
