@@ -48,8 +48,8 @@ export default function LocationData() {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
-  // Default mock weather values (will be replaced by API response)
-  const defaultWeather = { windSpeed: '15 kph', temp: '28°C', humidity: '85%' };
+  // Default values for initial or invalid states
+  const defaultWeather = { windSpeed: 'Unknown', temp: 'Unknown', humidity: 'Unknown' };
 
   // Fetch risk from backend API
   const fetchRisk = useCallback(async (loc) => {
@@ -65,8 +65,13 @@ export default function LocationData() {
     setLoading(false);
   }, []);
 
+  // Centralized validation for the location string
+  const isValidLocation = useMemo(() => {
+    return !!location.trim() && /^[a-zA-Z\s\-]+$/.test(location);
+  }, [location]);
+
   useEffect(() => {
-    if (location) {
+    if (location && isValidLocation) {
       fetchRisk(location);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,7 +79,7 @@ export default function LocationData() {
 
   // Parse weather data from API response for metric cards
   const weatherMetrics = useMemo(() => {
-    if (!riskData?.weather_data_used) return defaultWeather;
+    if (!isValidLocation || !riskData?.weather_data_used) return defaultWeather;
     const w = riskData.weather_data_used;
     const windMatch = w.match(/Wind Speed:\s*([\d.]+\s*kph)/i);
     const tempMatch = w.match(/Temperature:\s*([\d.]+)\s*C/i);
@@ -84,26 +89,34 @@ export default function LocationData() {
       temp: tempMatch ? `${tempMatch[1]}°C` : defaultWeather.temp,
       humidity: humMatch ? `${humMatch[1]}%` : defaultWeather.humidity,
     };
-  }, [riskData]);
+  }, [riskData, isValidLocation]);
 
   // Calculate risk score from risk_level
   const riskScore = useMemo(() => {
-    // Return 0 if location is empty or contains numbers/special characters
-    if (!location.trim() || !/^[a-zA-Z\s\-]+$/.test(location)) return 0;
-    
+    if (!isValidLocation) return 0;
     if (!riskData?.risk_level) return 0;
     const level = riskData.risk_level.toLowerCase();
     if (level.includes('high')) return 85;
     if (level.includes('medium')) return 55;
     if (level.includes('low')) return 25;
     return 0;
-  }, [riskData, location]);
+  }, [riskData, isValidLocation]);
 
   const scoreColor = riskScore >= 70 ? 'var(--accent-red)' : riskScore >= 40 ? 'var(--accent-orange)' : 'var(--accent-green)';
 
   // Historical flood frequency chart data (memoized to react to location changes)
   const floodChartData = useMemo(() => {
-    const seed = getSeed(location || 'Malaysia');
+    if (!isValidLocation) {
+      return [{
+        x: ['2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+        y: [0, 0, 0, 0, 0, 0, 0],
+        type: 'bar',
+        marker: { color: '#1e2a3a' },
+        name: 'No Data',
+      }];
+    }
+
+    const seed = getSeed(location);
     const baseValues = [12, 18, 15, 32, 28, 35, 22];
     // Generate unique pattern based on location seed
     const dynamicValues = baseValues.map((v, i) => {
@@ -120,11 +133,23 @@ export default function LocationData() {
       },
       name: 'Flood Events',
     }];
-  }, [location]);
+  }, [location, isValidLocation]);
 
   // Rainfall comparison chart data (memoized to react to location changes)
   const rainfallData = useMemo(() => {
-    const seed = getSeed(location || 'Malaysia');
+    const xLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    if (!isValidLocation) {
+      return [{
+        x: xLabels,
+        y: new Array(12).fill(0),
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#1e2a3a', width: 2, dash: 'dot' },
+        name: 'No Data',
+      }];
+    }
+
+    const seed = getSeed(location);
     const baseValues = [250, 220, 280, 310, 200, 130, 140, 155, 190, 290, 350, 380];
     // Generate unique pattern based on location seed
     const dynamicValues = baseValues.map((v, i) => {
@@ -133,7 +158,7 @@ export default function LocationData() {
     });
 
     return [{
-      x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      x: xLabels,
       y: dynamicValues,
       type: 'scatter',
       mode: 'lines+markers',
@@ -141,7 +166,7 @@ export default function LocationData() {
       marker: { size: 4 },
       name: 'Rainfall (mm)',
     }];
-  }, [location]);
+  }, [location, isValidLocation]);
 
   const floodLayout = useMemo(() => ({ bargap: 0.3 }), []);
   const rainfallLayout = useMemo(() => ({}), []);
@@ -178,12 +203,14 @@ export default function LocationData() {
             <div className="risk-score__number" style={{ color: scoreColor }}>{riskScore}<span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/100</span></div>
           </div>
           <div style={{ flex: 1 }}>
-            <div className="risk-score__label">{riskData?.primary_hazard || 'Flood'} — {riskData?.risk_level || 'High'}</div>
+            <div className="risk-score__label">
+              {isValidLocation ? `${riskData?.primary_hazard || 'Flood'} — ${riskData?.risk_level || 'High'}` : 'N/A — SECURE'}
+            </div>
             <div className="risk-score__bar">
               <div className="risk-score__indicator" style={{ left: `${riskScore}%` }} />
             </div>
             <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.4 }}>
-              {riskData?.explanation || 'Loading analysis...'}
+              {isValidLocation ? (riskData?.explanation || 'Loading analysis...') : 'Invalid location. Please enter a valid city or district name (e.g., Kuala Lumpur).'}
             </div>
           </div>
         </div>
