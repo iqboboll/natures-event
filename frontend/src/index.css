@@ -503,6 +503,19 @@ body {
   box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
 }
 
+.map-search__btn--reset {
+  background: rgba(45, 55, 72, 0.8);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+.map-search__btn--reset:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--shadow-glow-cyan);
+}
+
 .map-legend {
   position: absolute;
   bottom: 12px;

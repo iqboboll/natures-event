@@ -97,14 +97,16 @@ const markers = [
 // Connection arcs removed as per tactical redesign request
 const arcs = [];
 
-// Component to fly to searched location
-function FlyTo({ center }) {
+// Component to fly to searched location or reset view
+function FlyTo({ target }) {
   const map = useMap();
-  if (center) map.flyTo(center, 14, { duration: 1.5 });
+  if (target) {
+    map.flyTo(target.coords, target.zoom, { duration: 1.5 });
+  }
   return null;
 }
 
-export default function MapView({ onSearch, activeFilter, setActiveFilter }) {
+export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter }) {
   const [searchVal, setSearchVal] = useState('');
   const [flyTarget, setFlyTarget] = useState(null);
   const [tacticalMode, setTacticalMode] = useState('standard');
@@ -121,7 +123,7 @@ export default function MapView({ onSearch, activeFilter, setActiveFilter }) {
       const data = await res.json();
       if (data.length > 0) {
         const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        setFlyTarget(coords);
+        setFlyTarget({ coords, zoom: 14 });
         // Call the parent's unified search handler
         if (typeof onSearch === 'function') {
           onSearch(searchVal);
@@ -131,6 +133,14 @@ export default function MapView({ onSearch, activeFilter, setActiveFilter }) {
       console.error('Geocoding failed:', err);
     }
   }, [searchVal, onSearch]);
+
+  const handleResetClick = () => {
+    setSearchVal('');
+    setFlyTarget({ coords: [4.2105, 101.9758], zoom: 6 });
+    if (typeof onReset === 'function') {
+      onReset();
+    }
+  };
 
   // Style constants
   const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -164,6 +174,7 @@ export default function MapView({ onSearch, activeFilter, setActiveFilter }) {
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
         />
         <button className="map-search__btn" onClick={handleSearch}>SEARCH</button>
+        <button className="map-search__btn map-search__btn--reset" onClick={handleResetClick}>RESET</button>
       </div>
 
       {/* Leaflet Map - Re-mounting MapContainer ensures TileLayer swap is perfect */}
@@ -181,15 +192,15 @@ export default function MapView({ onSearch, activeFilter, setActiveFilter }) {
         />
 
         {/* Fly to searched location */}
-        <FlyTo center={flyTarget} />
+        <FlyTo target={flyTarget} />
 
         {/* User Search Marker (Person Figure) */}
-        {flyTarget && (
-          <Marker position={flyTarget} icon={icons.user}>
+        {flyTarget && flyTarget.zoom > 10 && (
+          <Marker position={flyTarget.coords} icon={icons.user}>
             <Popup autoOpen>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', textAlign: 'center' }}>
                 <strong style={{ color: 'var(--accent-cyan)' }}>SEARCHED LOCATION</strong><br />
-                <span>LAT: {flyTarget[0].toFixed(4)} <br/> LON: {flyTarget[1].toFixed(4)}</span>
+                <span>LAT: {flyTarget.coords[0].toFixed(4)} <br/> LON: {flyTarget.coords[1].toFixed(4)}</span>
               </div>
             </Popup>
           </Marker>

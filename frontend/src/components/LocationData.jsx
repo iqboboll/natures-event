@@ -43,8 +43,8 @@ function PlotlyChart({ data, layout }) {
 }
 
 export default function LocationData({ location, riskData, loading, activeFilter }) {
-  // Default values for initial or invalid states
-  const defaultWeather = { windSpeed: 'Unknown', temp: 'Unknown', humidity: 'Unknown' };
+  // Default values for initial or reset states
+  const defaultWeather = { windSpeed: '--', temp: '--', humidity: '--' };
 
   // Centralized validation for the location string
   const isValidLocation = useMemo(() => {

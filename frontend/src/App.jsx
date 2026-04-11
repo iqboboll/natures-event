@@ -70,6 +70,12 @@ export default function App() {
       setLoadingRisk(false);
     }
   };
+  
+  const handleReset = useCallback(() => {
+    setSharedLocation('');
+    setSharedRiskData(null);
+    setActiveFilter('all');
+  }, []);
 
   return (
     <div className="dashboard" ref={dashRef}>
@@ -90,6 +96,7 @@ export default function App() {
       <ErrorBoundary fallback="Map failed to load">
         <MapView 
           onSearch={handleUnifiedSearch} 
+          onReset={handleReset}
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
         />
