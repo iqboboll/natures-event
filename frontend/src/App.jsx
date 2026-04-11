@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Header from './components/Header';
 import SensorGrid from './components/SensorGrid';
