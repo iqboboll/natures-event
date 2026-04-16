@@ -5,7 +5,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'Welcome to the Disaster Monitor AI. I am powered by Groq (Llama 3.3). Ask me about natural disaster safety, emergency procedures, or risk assessments for any location in Malaysia.',
+      text: 'Welcome to the Disaster Monitor AI. I am powered by Google Gemini (Vertex AI). Ask me about natural disaster safety, emergency procedures, or risk assessments for any location in Malaysia.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -41,7 +41,7 @@ export default function ChatBot() {
   return (
     <div className="panel" style={{ flex: 1 }}>
       <div className="panel-header">
-        <span className="panel-header__title">Groq AI Chatbot</span>
+        <span className="panel-header__title">Gemini AI Chatbot</span>
         <span className="panel-header__badge panel-header__badge--live">ACTIVE</span>
       </div>
 
@@ -49,13 +49,13 @@ export default function ChatBot() {
       <div className="chat-messages">
         {messages.map((msg, i) => (
           <div key={i} className={`chat-msg chat-msg--${msg.sender} fade-in`}>
-            <div className="chat-msg__sender">{msg.sender === 'ai' ? 'GROQ AI' : 'YOU'}</div>
+            <div className="chat-msg__sender">{msg.sender === 'ai' ? 'GEMINI AI' : 'YOU'}</div>
             {msg.text}
           </div>
         ))}
         {loading && (
           <div className="chat-msg chat-msg--ai">
-            <div className="chat-msg__sender">GROQ AI</div>
+            <div className="chat-msg__sender">GEMINI AI</div>
             <span className="spinner" /> Thinking...
           </div>
         )}
