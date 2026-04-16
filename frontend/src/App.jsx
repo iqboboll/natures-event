@@ -10,6 +10,8 @@ import ImageAnalyzer from './components/ImageAnalyzer';
 import ChatBot from './components/ChatBot';
 import AlertSummary from './components/AlertSummary';
 import AuthModal from './components/AuthModal';
+import { db } from './services/firebaseConfig';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 export default function App() {
   const [showAuth, setShowAuth] = useState(false);
@@ -74,6 +76,9 @@ export default function App() {
       console.error('Unified search failed:', err);
     } finally {
       setLoadingRisk(false);
+    }
+  };
+
   const handleReset = useCallback(() => {
     setSharedLocation('');
     setSharedRiskData(null);
@@ -84,9 +89,6 @@ export default function App() {
   // REAL-TIME FIRESTORE LISTENER
   const [liveReports, setLiveReports] = useState([]);
   useEffect(() => {
-    const { db } = require('./services/firebaseConfig');
-    const { collection, onSnapshot, query, orderBy } = require('firebase/firestore');
-    
     const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

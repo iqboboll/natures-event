@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { db } from '../services/firebaseConfig';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // Fix default marker icons in webpack/vite bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -164,9 +166,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   const handleReportSubmit = async () => {
     if (!reportCoords) return;
     try {
-      const { db } = await import('../services/firebaseConfig');
-      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      
       await addDoc(collection(db, "reports"), {
         type: reportType,
         text: reportText,
@@ -217,8 +216,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   // Add real-time reports to markers
   const [liveMarkers, setLiveMarkers] = useState([]);
   useEffect(() => {
-    const { db } = require('../services/firebaseConfig');
-    const { collection, onSnapshot, query, orderBy } = require('firebase/firestore');
     const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
     return onSnapshot(q, (snapshot) => {
       const reports = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, label: `REPORT: ${doc.data().text || doc.data().type}` }));
