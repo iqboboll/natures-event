@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function Header({ onLoginClick, onThemeToggle, isDark }) {
+export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onToggleRight, isDark, isMobile }) {
   const [time, setTime] = useState(new Date());
   const [activeRegion, setActiveRegion] = useState('REGIONS');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,14 +54,30 @@ export default function Header({ onLoginClick, onThemeToggle, isDark }) {
         </button>
       </div>
 
-      {/* Hamburger Button (Mobile only — shown via CSS) */}
-      <button
-        className="header__hamburger"
-        onClick={() => setMenuOpen(prev => !prev)}
-        title="Menu"
-      >
-        {menuOpen ? '✕' : '☰'}
-      </button>
+      {/* Hamburger / Toggle Buttons (Mobile only) */}
+      <div className="header__mobile-controls">
+        <button
+          className="header__toggle-btn"
+          onClick={onToggleLeft}
+          title="Tactical Menu"
+        >
+          ☰
+        </button>
+        <button
+          className="header__toggle-btn"
+          onClick={onToggleRight}
+          title="Data Feed"
+        >
+          📡
+        </button>
+        <button
+          className="header__hamburger"
+          onClick={() => setMenuOpen(prev => !prev)}
+          title="Settings"
+        >
+          {menuOpen ? '✕' : '⚙️'}
+        </button>
+      </div>
 
       {/* Mobile Dropdown Menu */}
       <div className={`header__mobile-menu ${menuOpen ? 'header__mobile-menu--open' : ''}`}>

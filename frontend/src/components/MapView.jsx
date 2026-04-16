@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -18,6 +18,8 @@ const COLORS = {
   monsoon: { name: 'gold', hex: '#d4a843' },
   wildfire: { name: 'purple', hex: '#a855f7' },
   station: { name: 'green', hex: '#00e676' },
+  medical: { name: 'red', hex: '#ff4757' },
+  shelter: { name: 'blue', hex: '#00d4ff' },
 };
 
 // Custom colored marker icons with optional sonar pulse
@@ -45,12 +47,16 @@ const icons = {
   monsoon: createIcon(COLORS.monsoon),
   wildfire: createIcon(COLORS.wildfire),
   station: createIcon(COLORS.station),
+  medical: createIcon(COLORS.medical),
+  shelter: createIcon(COLORS.shelter),
   // Pulse variants for filtered view
   earthquake_pulse: createIcon(COLORS.earthquake, true),
   flood_pulse: createIcon(COLORS.flood, true),
   monsoon_pulse: createIcon(COLORS.monsoon, true),
   wildfire_pulse: createIcon(COLORS.wildfire, true),
   station_pulse: createIcon(COLORS.station, true),
+  medical_pulse: createIcon(COLORS.medical, true),
+  shelter_pulse: createIcon(COLORS.shelter, true),
   user: L.divIcon({
     className: 'user-marker',
     html: `
@@ -106,11 +112,29 @@ function FlyTo({ target }) {
   return null;
 }
 
+// Component to handle map clicks for reporting
+function MapEvents({ onMapClick, isReporting }) {
+  useMapEvents({
+    click(e) {
+      if (isReporting) {
+        onMapClick(e.latlng);
+      }
+    },
+  });
+  return null;
+}
+
 export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter, evacuationTarget, sharedLocation }) {
   const [searchVal, setSearchVal] = useState('');
   const [flyTarget, setFlyTarget] = useState(null);
   const [tacticalMode, setTacticalMode] = useState('standard');
   const [isScanning, setIsScanning] = useState(false);
+  
+  // REPORTING STATE
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportCoords, setReportCoords] = useState(null);
+  const [reportType, setReportType] = useState('flood');
+  const [reportText, setReportText] = useState('');
 
   // Simple geocoding via Nominatim (free, no key required)
   const handleSearch = useCallback(async () => {
@@ -136,6 +160,29 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
       console.error('Geocoding failed:', err);
     }
   }, [searchVal, onSearch]);
+
+  const handleReportSubmit = async () => {
+    if (!reportCoords) return;
+    try {
+      const { db } = await import('../services/firebaseConfig');
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      
+      await addDoc(collection(db, "reports"), {
+        type: reportType,
+        text: reportText,
+        pos: [reportCoords.lat, reportCoords.lng],
+        timestamp: serverTimestamp(),
+        severity: 'High'
+      });
+      
+      // Cleanup
+      setIsReporting(false);
+      setReportCoords(null);
+      setReportText('');
+    } catch (err) {
+      console.error('Failed to submit report:', err);
+    }
+  };
 
   const handleResetClick = () => {
     setSearchVal('');
@@ -167,6 +214,20 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const RADAR_TILES = radarPath ? `https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png` : null;
 
+  // Add real-time reports to markers
+  const [liveMarkers, setLiveMarkers] = useState([]);
+  useEffect(() => {
+    const { db } = require('../services/firebaseConfig');
+    const { collection, onSnapshot, query, orderBy } = require('firebase/firestore');
+    const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const reports = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, label: `REPORT: ${doc.data().text || doc.data().type}` }));
+      setLiveMarkers(reports);
+    });
+  }, []);
+
+  const allMarkers = [...markers, ...liveMarkers];
+
   return (
     <div className={`map-area map-${tacticalMode}`}>
       {/* CyberScan Overlay */}
@@ -192,6 +253,13 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         >
           {showRadar ? 'LIVE: ON' : 'WEATHER'}
         </button>
+        <button 
+          className={`map-switcher__btn ${isReporting ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setIsReporting(prev => !prev)}
+          style={{ background: isReporting ? 'var(--accent-red)' : '' }}
+        >
+          {isReporting ? 'CANCEL' : 'REPORT'}
+        </button>
       </div>
 
       {/* Search Overlay */}
@@ -215,6 +283,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         style={{ width: '100%', height: '100%' }}
         zoomControl={true}
       >
+        <MapEvents isReporting={isReporting} onMapClick={setReportCoords} />
         <TileLayer
           url={tacticalMode === 'street' ? LIGHT_TILES : DARK_TILES}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -279,7 +348,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         )}
 
         {/* Disaster markers */}
-        {markers
+        {allMarkers
           .filter(m => activeFilter === 'all' || m.type === activeFilter)
           .map((m, i) => (
             <Marker 
@@ -338,6 +407,51 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
           </div>
         ))}
       </div>
+
+      {/* REPORT FORM OVERLAY */}
+      {isReporting && (
+        <div className="report-overlay glass">
+          <div className="report-overlay__header">Tactical Field Report</div>
+          
+          <div className="report-overlay__step">
+            {reportCoords ? (
+              <span style={{ color: 'var(--accent-green)' }}>✓ Location Locked</span>
+            ) : (
+              <span className="pulse-text">Click on the map to mark incident</span>
+            )}
+          </div>
+
+          {reportCoords && (
+            <div className="fade-in">
+              <select 
+                className="report-overlay__select"
+                value={reportType}
+                onChange={e => setReportType(e.target.value)}
+              >
+                <option value="flood">Flood</option>
+                <option value="wildfire">Wildfire</option>
+                <option value="monsoon">Storm/Monsoon</option>
+                <option value="medical">Medical Emergency</option>
+                <option value="access">Road Blocked</option>
+              </select>
+              
+              <textarea 
+                className="report-overlay__input"
+                placeholder="Brief description (optional)..."
+                value={reportText}
+                onChange={e => setReportText(e.target.value)}
+              />
+              
+              <button 
+                className="report-overlay__btn"
+                onClick={handleReportSubmit}
+              >
+                SUBMIT INTELLIGENCE
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

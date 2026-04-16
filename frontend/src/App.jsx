@@ -16,7 +16,9 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [isDark, setIsDark] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const dashRef = useRef(null);
 
   // SHARED STATE FOR UNIFIED SEARCH
@@ -27,7 +29,7 @@ export default function App() {
 
   // Track viewport width for mobile detection
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -72,14 +74,28 @@ export default function App() {
       console.error('Unified search failed:', err);
     } finally {
       setLoadingRisk(false);
-    }
-  };
-  
   const handleReset = useCallback(() => {
     setSharedLocation('');
     setSharedRiskData(null);
     setEvacuationTarget(null);
     setActiveFilter('all');
+  }, []);
+
+  // REAL-TIME FIRESTORE LISTENER
+  const [liveReports, setLiveReports] = useState([]);
+  useEffect(() => {
+    const { db } = require('./services/firebaseConfig');
+    const { collection, onSnapshot, query, orderBy } = require('firebase/firestore');
+    
+    const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setLiveReports(reports);
+    }, (error) => {
+      console.error("Firestore Listen Error:", error);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -88,11 +104,14 @@ export default function App() {
       <Header
         onLoginClick={() => setShowAuth(true)}
         onThemeToggle={() => setIsDark(prev => !prev)}
+        onToggleLeft={() => setLeftOpen(prev => !prev)}
+        onToggleRight={() => setRightOpen(prev => !prev)}
         isDark={isDark}
+        isMobile={isMobile}
       />
 
       {/* Left Sidebar: Sensor Grid + Risk Gauges */}
-      <div className="left-sidebar glass scanline">
+      <div className={`left-sidebar glass scanline ${leftOpen ? 'left-sidebar--open' : ''}`}>
         <SensorGrid />
         <RiskGauges />
       </div>
@@ -110,7 +129,7 @@ export default function App() {
       </ErrorBoundary>
 
       {/* Right Sidebar: Chatbot (hidden on mobile) + Alert Summary */}
-      <div className="right-sidebar glass scanline">
+      <div className={`right-sidebar glass scanline ${rightOpen ? 'right-sidebar--open' : ''}`}>
         <ChatBot />
         <AlertSummary />
       </div>
