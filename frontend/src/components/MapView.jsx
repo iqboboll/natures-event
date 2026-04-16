@@ -22,6 +22,7 @@ const COLORS = {
   station: { name: 'green', hex: '#00e676' },
   medical: { name: 'red', hex: '#ff4757' },
   shelter: { name: 'blue', hex: '#00d4ff' },
+  access: { name: 'orange', hex: '#ff9f43' },
 };
 
 // Custom colored marker icons with optional sonar pulse
@@ -59,6 +60,8 @@ const icons = {
   station_pulse: createIcon(COLORS.station, true),
   medical_pulse: createIcon(COLORS.medical, true),
   shelter_pulse: createIcon(COLORS.shelter, true),
+  access: createIcon(COLORS.access),
+  access_pulse: createIcon(COLORS.access, true),
   user: L.divIcon({
     className: 'user-marker',
     html: `
@@ -347,12 +350,16 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         {/* Disaster markers */}
         {allMarkers
           .filter(m => activeFilter === 'all' || m.type === activeFilter)
-          .map((m, i) => (
-            <Marker 
-              key={`${m.type}-${i}`} 
-              position={m.pos} 
-              icon={activeFilter === 'all' ? icons[m.type] : icons[`${m.type}_pulse`]}
-            >
+          .map((m, i) => {
+            const iconKey = activeFilter === 'all' ? m.type : `${m.type}_pulse`;
+            const markerIcon = icons[iconKey] || icons[m.type] || icons.flood;
+            
+            return (
+              <Marker 
+                key={`${m.id || m.type}-${i}`} 
+                position={m.pos} 
+                icon={markerIcon}
+              >
               <Popup>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
                   <strong>{m.label}</strong><br />
