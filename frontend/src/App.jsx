@@ -13,6 +13,7 @@ import AuthModal from './components/AuthModal';
 import { db } from './services/firebaseConfig';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
+// Vercel Force Redeploy: 2026-04-16T22:35 (Guardian Platform Sync)
 export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [user, setUser] = useState(null);
