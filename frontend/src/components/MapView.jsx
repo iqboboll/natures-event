@@ -106,14 +106,17 @@ function FlyTo({ target }) {
   return null;
 }
 
-export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter }) {
+export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter, evacuationTarget, sharedLocation }) {
   const [searchVal, setSearchVal] = useState('');
   const [flyTarget, setFlyTarget] = useState(null);
   const [tacticalMode, setTacticalMode] = useState('standard');
+  const [isScanning, setIsScanning] = useState(false);
 
   // Simple geocoding via Nominatim (free, no key required)
   const handleSearch = useCallback(async () => {
     if (!searchVal.trim()) return;
+    setIsScanning(true);
+    setTimeout(() => setIsScanning(false), 3000); // 3s scanning animation
     try {
       // NOTE: For production, use a proper geocoding API (Google, Mapbox, etc.)
       const geoQuery = searchVal.toLowerCase().includes('malaysia') ? searchVal : `${searchVal}, Malaysia`;
@@ -142,25 +145,52 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     }
   };
 
+  // RainViewer Radar Tiles Logic
+  const [radarPath, setRadarPath] = useState(null);
+  const [showRadar, setShowRadar] = useState(false);
+
+  useEffect(() => {
+    if (showRadar && !radarPath) {
+      fetch('https://api.rainviewer.com/public/weather-maps.json')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.radar && data.radar.past) {
+            const latest = data.radar.past[data.radar.past.length - 1];
+            setRadarPath(latest.path);
+          }
+        });
+    }
+  }, [showRadar, radarPath]);
+
   // Style constants
   const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const RADAR_TILES = radarPath ? `https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png` : null;
 
   return (
     <div className={`map-area map-${tacticalMode}`}>
+      {/* CyberScan Overlay */}
+      {isScanning && <div className="radar-scan" />}
+      
       {/* Map Mode Switcher */}
       <div className="map-switcher">
         <button 
           className={`map-switcher__btn ${tacticalMode === 'standard' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => setTacticalMode('standard')}
+          onClick={() => { setTacticalMode('standard'); setShowRadar(false); }}
         >
           DARK
         </button>
         <button 
           className={`map-switcher__btn ${tacticalMode === 'street' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => setTacticalMode('street')}
+          onClick={() => { setTacticalMode('street'); setShowRadar(false); }}
         >
           STREET
+        </button>
+        <button 
+          className={`map-switcher__btn ${showRadar ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => setShowRadar(prev => !prev)}
+        >
+          {showRadar ? 'LIVE: ON' : 'WEATHER'}
         </button>
       </div>
 
@@ -191,6 +221,16 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
           maxZoom={19}
         />
 
+        {/* Dynamic Weather Radar Layer */}
+        {showRadar && RADAR_TILES && (
+          <TileLayer
+            url={RADAR_TILES}
+            attribution='&copy; <a href="https://www.rainviewer.com/api.html">RainViewer</a>'
+            opacity={0.65}
+            zIndex={100}
+          />
+        )}
+
         {/* Fly to searched location */}
         <FlyTo target={flyTarget} />
 
@@ -204,6 +244,38 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
               </div>
             </Popup>
           </Marker>
+        )}
+
+        {/* EVACUATION SAFETY PATH VISUALIZATION */}
+        {evacuationTarget && flyTarget && (
+          <>
+            <Marker 
+              position={[evacuationTarget.lat, evacuationTarget.lon]} 
+              icon={icons.station_pulse}
+            >
+              <Popup autoOpen>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                  <strong style={{ color: 'var(--accent-green)' }}>SAFE ZONE IDENTIFIED</strong><br />
+                  <span>{evacuationTarget.name}</span>
+                </div>
+              </Popup>
+            </Marker>
+            <Polyline 
+              positions={[flyTarget.coords, [evacuationTarget.lat, evacuationTarget.lon]]}
+              pathOptions={{
+                color: 'var(--accent-green)',
+                weight: 3,
+                dashArray: '10, 10',
+                opacity: 0.8
+              }}
+            >
+              <Popup>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                   Evacuation Path to Safety
+                </div>
+              </Popup>
+            </Polyline>
+          </>
         )}
 
         {/* Disaster markers */}

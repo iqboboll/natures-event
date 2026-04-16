@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Wind, Thermometer, Droplets, Zap } from 'lucide-react';
 import { checkHazardRisk } from '../services/api';
 
- 
 // Simple hash function to generate a numeric seed from a string
 const getSeed = (str) => {
   if (!str) return 42;
@@ -40,6 +40,19 @@ function PlotlyChart({ data, layout }) {
   }, [data, layout]);
 
   return <div ref={containerRef} style={{ width: '100%', minHeight: 120 }} />;
+}
+
+// Shared metric card component for consistency
+function MetricCard({ icon: Icon, label, value, unit, color }) {
+  return (
+    <div className="metric-card" style={{ borderColor: color ? `${color}44` : '' }}>
+      <div className="metric-card__icon-wrapper" style={{ color: color || 'var(--accent-cyan)' }}>
+        <Icon size={16} strokeWidth={2.5} />
+      </div>
+      <div className="metric-card__label">{label}</div>
+      <div className="metric-card__value" style={{ color: color || 'var(--accent-cyan)' }}>{value}</div>
+    </div>
+  );
 }
 
 export default function LocationData({ location, riskData, loading, activeFilter }) {
@@ -207,18 +220,23 @@ export default function LocationData({ location, riskData, loading, activeFilter
 
         {/* Weather Metric Cards */}
         <div className="metric-cards">
-          <div className="metric-card">
-            <div className="metric-card__label">Wind Speed</div>
-            <div className="metric-card__value">{weatherMetrics.windSpeed}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-card__label">Temperature</div>
-            <div className="metric-card__value">{weatherMetrics.temp}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-card__label">Humidity</div>
-            <div className="metric-card__value">{weatherMetrics.humidity}</div>
-          </div>
+          <MetricCard 
+            icon={Wind} 
+            label="Wind Speed" 
+            value={weatherMetrics.windSpeed} 
+          />
+          <MetricCard 
+            icon={Thermometer} 
+            label="Temperature" 
+            value={weatherMetrics.temp} 
+            color="var(--accent-orange)"
+          />
+          <MetricCard 
+            icon={Droplets} 
+            label="Humidity" 
+            value={weatherMetrics.humidity} 
+            color="var(--accent-blue)"
+          />
         </div>
       </div>
     </div>

@@ -55,11 +55,15 @@ export default function App() {
     console.log('Logged in:', userData.email);
   };
 
+  // EVACUATION PATH STATE
+  const [evacuationTarget, setEvacuationTarget] = useState(null);
+
   // UNIFIED SEARCH HANDLER
   const handleUnifiedSearch = async (loc, lat = null, lon = null) => {
     if (!loc) return;
     setSharedLocation(loc);
     setLoadingRisk(true);
+    setEvacuationTarget(null); // Reset path on new search
     try {
       const { checkHazardRisk } = await import('./services/api');
       const data = await checkHazardRisk(loc, lat, lon);
@@ -74,6 +78,7 @@ export default function App() {
   const handleReset = useCallback(() => {
     setSharedLocation('');
     setSharedRiskData(null);
+    setEvacuationTarget(null);
     setActiveFilter('all');
   }, []);
 
@@ -99,6 +104,8 @@ export default function App() {
           onReset={handleReset}
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
+          evacuationTarget={evacuationTarget}
+          sharedLocation={sharedLocation}
         />
       </ErrorBoundary>
 
@@ -122,7 +129,11 @@ export default function App() {
           />
         </ErrorBoundary>
         <ErrorBoundary fallback="Image Analyzer unavailable">
-          <ImageAnalyzer />
+          <ImageAnalyzer onAnalysisComplete={(data) => {
+            if (data.evacuation_target) {
+              setEvacuationTarget(data.evacuation_target);
+            }
+          }} />
         </ErrorBoundary>
       </div>
 

@@ -39,6 +39,9 @@ export default function ImageAnalyzer() {
         file
       );
       setAnalysis(data);
+      if (typeof onAnalysisComplete === 'function') {
+        onAnalysisComplete(data);
+      }
     } catch (err) {
       setAnalysis({ hazard: 'Error', severity: 'N/A', analysis: 'Failed to analyze image. Is the backend running?' });
     }

@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI App
 app = FastAPI(
     title="Flood Alert System Backend",
-    description="Backend for the Flood Alert App powered by FastAPI and GROQ AI",
-    version="1.0.0"
+    description="Backend for the Flood Alert App powered by FastAPI with Hybrid AI (Groq + Google Gemini)",
+    version="2.0.0"
 )
 
 # --- CACHE & DATA REFRESH SYSTEM ---
@@ -195,11 +195,21 @@ async def report_hazard(
     
     if hazard.lower() != "none" and "high" in severity.lower():
         # Call the Agent to find the nearest safe zone and draft an evacuation response
-        evac_plan = await get_evacuation_plan(latitude, longitude, hazard)
-        smart_alert_body = f"EMERGENCY: {evac_plan}"
+        evac_data = await get_evacuation_plan(latitude, longitude, hazard)
+        instruction = evac_data.get("instruction", f"Please evacuate to {evac_data.get('safe_zone_name')}")
+        smart_alert_body = f"EMERGENCY: {instruction}"
         
         # Append to the AI Analysis so the frontend displays it automatically
-        analysis += f"\n\n🚨 **Actionable Evacuation Plan:** {evac_plan}"
+        analysis += f"\n\n🚨 **Actionable Evacuation Plan:** {instruction}"
+        
+        # Add evacuation coordinates for the frontend Map to draw the path
+        evacuation_target = {
+            "name": evac_data.get("safe_zone_name"),
+            "lat": evac_data.get("lat"),
+            "lon": evac_data.get("lon")
+        }
+    else:
+        evacuation_target = None
     
     # Save the report to Firebase Firestore
     db = get_db()
@@ -251,7 +261,8 @@ async def report_hazard(
         "hazard": hazard,
         "severity": severity,
         "confidence": confidence,
-        "analysis": analysis
+        "analysis": analysis,
+        "evacuation_target": evacuation_target
     }
 
 @app.post("/api/auth/register", summary="Register a New User")

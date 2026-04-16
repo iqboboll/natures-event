@@ -1543,6 +1543,92 @@ body {
   }
 }
 
+/* ---------- Tactical CyberScan Animation ---------- */
+.radar-scan {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(0, 212, 255, 0.05) 50%, 
+    rgba(0, 212, 255, 0.2) 50.5%, 
+    transparent 51%
+  );
+  background-size: 100% 200%;
+  animation: radar-sweep 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes radar-sweep {
+  0% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* --- Glassmorphism 2.0 Refinements --- */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.left-sidebar, .right-sidebar {
+  border-right: 1px solid var(--border-color);
+  background: rgba(10, 14, 20, 0.85);
+}
+
+/* --- Metric Card Enhancements --- */
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(13, 17, 23, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card:hover {
+  background: rgba(13, 17, 23, 0.8);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+.metric-card__icon-wrapper {
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.metric-card__label {
+  font-size: 7px;
+  opacity: 0.6;
+}
+
+.metric-card__value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+/* --- Dashboard Section Transitions --- */
+.panel {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- Map User Marker --- */
 .user-marker {
   transition: all 0.3s ease;
@@ -1566,8 +1652,6 @@ body {
   0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
   100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
-
-
 
 .map-switcher {
   position: absolute;
