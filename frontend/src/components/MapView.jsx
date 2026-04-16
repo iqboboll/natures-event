@@ -368,8 +368,8 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
                   </span>
                 </div>
               </Popup>
-            </Marker>
-          ))}
+            );
+          })}
 
         {/* Connection arcs */}
         {arcs.map((a, i) => (
