@@ -226,6 +226,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     });
   }, []);
 
+  const arcs = []; // Tactical connection arcs (placeholder for future sensor mesh)
   const allMarkers = [...markers, ...liveMarkers];
 
   return (
