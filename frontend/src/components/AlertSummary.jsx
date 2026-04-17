@@ -36,15 +36,23 @@ export default function AlertSummary() {
         </span>
       </div>
       <div className="panel-body">
-        {news.slice(0, 5).map((n, i) => (
+        {news.slice(0, 8).map((n, i) => (
           <div className="alert-item fade-in" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
             <div className="alert-item__header">
-              <span className="alert-item__type" style={{ color: 'var(--accent-gold)' }}>[OFFICIAL UPDATE]</span>
+              <span className="alert-item__type" style={{ color: n.tagColor || 'var(--accent-gold)' }}>
+                [{n.tag || 'OFFICIAL UPDATE'}]
+              </span>
               <span className="alert-item__time">{n.time}</span>
             </div>
             <div className="alert-item__desc" style={{ marginBottom: '8px' }}>{n.text}</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="alert-item__urgency alert-item__urgency--info">
+              <span 
+                className="alert-item__urgency" 
+                style={{ 
+                  background: `${n.tagColor || 'var(--accent-cyan)'}22`, 
+                  color: n.tagColor || 'var(--accent-cyan)' 
+                }}
+              >
                 {n.tag}
               </span>
               {n.url && n.url !== '#' && (

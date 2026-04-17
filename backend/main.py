@@ -319,35 +319,60 @@ async def get_me(token: dict = Depends(verify_token)):
         "email": token.get("email")
     }
 
-@app.get("/api/news", summary="Dynamic AI News Feed (GDACS Global Alerts)")
+@app.get("/api/news", summary="Hybrid AI News Feed (GDACS Global + Bernama MY)")
 async def get_news_feed():
     import httpx
     import xml.etree.ElementTree as ET
-    url = "https://www.gdacs.org/xml/rss.xml"
+    
+    gdacs_url = "https://www.gdacs.org/xml/rss.xml"
+    bernama_url = "https://bernama.com/en/rssfeed.php"
     headers = {"User-Agent": "flood-alert-system/1.0"}
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, timeout=5.0)
-            if response.status_code != 200: return []
-            
-            # Using fromstring on response.text/content handles the XML structure
-            root = ET.fromstring(response.content)
-            items = root.findall(".//item")
-            
-            news_items = []
-            for item in items[:8]:  # Limit to 8 latest alerts
-                title = item.find("title").text if item.find("title") is not None else "Unknown Alert"
-                link = item.find("link").text if item.find("link") is not None else "#"
-                # Simplify and beautify the GDACS titles
-                clean_title = title.replace("Green ", "").replace("Orange ", "🚨 ").replace("Red ", "🔥 ")
-                news_items.append({
-                    "time": "LIVE DATA", 
-                    "text": clean_title, 
-                    "url": link,
-                    "tag": "GLOBAL ALERT", 
-                    "tagColor": "var(--accent-red)"
-                })
-            return news_items
-    except Exception as e:
-        logger.error(f"GDACS Fetch failed: {e}")
-        return [{"time": "OFFLINE", "text": "Disaster feed temporarily unavailable.", "tag": "SYSTEM", "tagColor": "var(--accent-gray)"}]
+    
+    news_items = []
+
+    async with httpx.AsyncClient() as client:
+        # 1. FETCH BERNAMA (MALAYSIAN LOCAL)
+        try:
+            res_my = await client.get(bernama_url, headers=headers, timeout=5.0)
+            if res_my.status_code == 200:
+                root = ET.fromstring(res_my.content)
+                items = root.findall(".//item")
+                for item in items[:4]: # Top 4 local
+                    title = item.find("title").text if item.find("title") is not None else "Local Update"
+                    link = item.find("link").text if item.find("link") is not None else "#"
+                    news_items.append({
+                        "time": "MALAYSIA NEWS",
+                        "text": title,
+                        "url": link,
+                        "tag": "MY: BERNAMA",
+                        "tagColor": "var(--accent-cyan)"
+                    })
+        except Exception as e:
+            logger.error(f"Bernama Fetch failed: {e}")
+
+        # 2. FETCH GDACS (GLOBAL DISASTER ALERTS)
+        try:
+            res_intl = await client.get(gdacs_url, headers=headers, timeout=5.0)
+            if res_intl.status_code == 200:
+                root = ET.fromstring(res_intl.content)
+                items = root.findall(".//item")
+                for item in items[:4]: # Top 4 global
+                    title = item.find("title").text if item.find("title") is not None else "Global Alert"
+                    link = item.find("link").text if item.find("link") is not None else "#"
+                    # Beautify GDACS
+                    clean_title = title.replace("Green ", "").replace("Orange ", "🚨 ").replace("Red ", "🔥 ")
+                    news_items.append({
+                        "time": "INTERNATIONAL",
+                        "text": clean_title,
+                        "url": link,
+                        "tag": "GLOBAL ALERT",
+                        "tagColor": "var(--accent-red)"
+                    })
+        except Exception as e:
+            logger.error(f"GDACS Fetch failed: {e}")
+
+    # Fallback if both fail
+    if not news_items:
+        return [{"time": "OFFLINE", "text": "Disaster feeds temporarily unavailable.", "url": "#", "tag": "SYSTEM", "tagColor": "var(--accent-gray)"}]
+
+    return news_items
