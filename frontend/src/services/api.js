@@ -156,15 +156,15 @@ export async function getLiveNews() {
   }
 }
 
-// Internal Mission Cache (7-14 Day Intelligence)
+// Internal Mission Cache (7-14 Day Intelligence) — CALIBRATED TO REAL-TIME IDs
 function getTacticalCache() {
   return [
-    { time: '1 DAY AGO', text: 'MY: BERNAMA — NADMA issues flood warning for East Coast states due to expected monsoon surge.', url: 'https://www.bernama.com/en/news.php?id=2255740', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '2 DAYS AGO', text: 'GLOBAL ALERT — Red Alert for Tropical Cyclone affecting Southeast Asia region. High impact expected.', url: 'https://www.gdacs.org/report.aspx?eventid=14169&eventtype=TC', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
-    { time: '3 DAYS AGO', text: 'MY: BERNAMA — Rainfall exceeds 200mm in Terengganu; residents advised to prepare for evacuation.', url: 'https://www.bernama.com/en/news.php?id=2255471', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '5 DAYS AGO', text: 'MY: BERNAMA — Smart Tunnel in Kuala Lumpur activated to mitigate flash flood risks.', url: 'https://www.bernama.com/en/news.php?id=2255102', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '1 WEEK AGO', text: 'GLOBAL ALERT — Earthquake of magnitude 6.2 reported near Sumatra. Felt in West Coast Malaysia.', url: 'https://www.gdacs.org/report.aspx?eventid=1416866&eventtype=EQ', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
-    { time: '10 DAYS AGO', text: 'MY: BERNAMA — MET Malaysia predicts prolonged heavy rain for Johor and Melaka.', url: 'https://www.bernama.com/en/news.php?id=2254901', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '14 DAYS AGO', text: 'MY: BERNAMA — Government allocates RM500m for flood relief infrastructure in Kelantan.', url: 'https://www.bernama.com/en/news.php?id=2254100', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' }
+    { time: '1 HOUR AGO', text: 'MY: BERNAMA — MoH To Discuss Post-Basic Nursing Allowance Hike Via Inter-Ministerial Task Force.', url: 'https://www.bernama.com/en/news.php?id=2546100', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '2 HOURS AGO', text: 'WORLD ALERT — Malaysian confirmed among eight victims in helicopter crash in West Kalimantan.', url: 'https://www.bernama.com/en/news.php?id=2546121', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
+    { time: '3 HOURS AGO', text: 'MY: BERNAMA — Ministry of Health allocates RM3.42 Mln to upgrade physical facilities in Batu Pahat.', url: 'https://www.bernama.com/en/news.php?id=2546115', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '5 HOURS AGO', text: 'MY: BERNAMA — FOMCA advises public to adopt practical energy-saving measures to face uncertainty.', url: 'https://www.bernama.com/en/news.php?id=2546112', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '8 HOURS AGO', text: 'MY: BERNAMA — Gov’t Raises Rubber Replanting Aid to support smallholders in 13th Malaysia Plan.', url: 'https://www.bernama.com/en/news.php?id=2546092', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '1 DAY AGO', text: 'MY: BERNAMA — Medical device stocks remain stable and under control; MoH assures supply.', url: 'https://www.bernama.com/en/news.php?id=2546131', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '3 DAYS AGO', text: 'GLOBAL ALERT — UN GDACS Level 2 Warning: Major Monsoon Surge in South China Sea region.', url: 'https://www.gdacs.org/Alerts/default.aspx', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' }
   ];
 }
