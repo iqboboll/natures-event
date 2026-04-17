@@ -350,7 +350,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
 
         {/* Disaster markers */}
         {allMarkers
-          .filter(m => activeFilter === 'all' || m.type === activeFilter)
+          .filter(m => (activeFilter === 'all' || m.type === activeFilter) && Array.isArray(m.pos) && m.pos.length === 2)
           .map((m, i) => {
             const iconKey = activeFilter === 'all' ? m.type : `${m.type}_pulse`;
             const markerIcon = icons[iconKey] || icons[m.type] || icons.flood;
