@@ -113,10 +113,10 @@ export default function App() {
         isMobile={isMobile}
       />
 
-      {/* Left Sidebar: Sensor Grid + Risk Gauges */}
+      {/* Left Sidebar: Risk Gauges + AI Live News Feed */}
       <div className={`left-sidebar glass scanline ${leftOpen ? 'left-sidebar--open' : ''}`}>
-        <SensorGrid />
         <RiskGauges />
+        <NewsFeed />
       </div>
 
       {/* Central Map View — ErrorBoundary must inherit grid-area */}
@@ -139,9 +139,6 @@ export default function App() {
 
       {/* Bottom Panel Group */}
       <div className="bottom-panels glass">
-        <ErrorBoundary fallback="News Feed unavailable">
-          <NewsFeed />
-        </ErrorBoundary>
         <ErrorBoundary fallback="Location Data unavailable">
           <LocationData 
             location={sharedLocation} 

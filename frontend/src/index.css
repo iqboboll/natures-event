@@ -152,7 +152,7 @@ body {
 /* ---------- Dashboard Grid Layout ---------- */
 .dashboard {
   display: grid;
-  grid-template-rows: 60px 1fr 280px;
+  grid-template-rows: 60px 1fr 340px;
   grid-template-columns: 240px 1fr 280px;
   grid-template-areas:
     "header  header  header"
@@ -653,7 +653,7 @@ body {
 .bottom-panels {
   grid-area: bottom;
   display: grid;
-  grid-template-columns: 220px 1fr 260px;
+  grid-template-columns: 1fr 280px;
   gap: 1px;
   background: var(--border-color);
 }
@@ -911,6 +911,37 @@ body {
 }
 .chat-input__send:hover {
   opacity: 0.85;
+}
+
+/* ---------- Alert Summary Toggle ---------- */
+.alert-toggle {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  padding: 2px;
+}
+
+.alert-toggle__btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 4px 0;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.alert-toggle__btn--active {
+  background: var(--bg-card);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0,212,255,0.1);
 }
 
 /* ---------- Alert Summary ---------- */

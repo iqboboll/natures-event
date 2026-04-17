@@ -32,7 +32,7 @@ export default function NewsFeed() {
   }, []);
 
   return (
-    <div className="panel">
+    <div className="panel" style={{ flex: 1 }}>
       <div className="panel-header">
         <span className="panel-header__title">AI Live News Feed</span>
         <span className="panel-header__badge panel-header__badge--live">
