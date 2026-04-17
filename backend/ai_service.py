@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # --- Initialize Gemini Vertex AI Client (New google-genai SDK) ---
 gcp_project = os.getenv("GCP_PROJECT_ID")
-gcp_location = os.getenv("GCP_LOCATION", "us-central1")
+gcp_location = os.getenv("GCP_LOCATION", "asia-southeast1")
 gemini_client_vertex = None
 
 # 🚀 1. Attempt Vertex AI (Uses GCP Credits)
@@ -31,7 +31,7 @@ if gcp_project:
     except Exception as e:
         logger.error(f"⚠️ Vertex AI not ready yet: {e}")
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-1.5-flash-001"
 
 # Helper to get the Vertex Gemini client
 def get_gemini_client():
@@ -302,7 +302,7 @@ async def get_strategic_advisory_text(news_items: list, lang: str = "en") -> str
 
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-flash-001",
             contents=prompt
         )
         return response.text.strip()
