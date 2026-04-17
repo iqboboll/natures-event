@@ -103,8 +103,7 @@ const markers = [
   { pos: [3.2845, 101.7456], type: 'access',     label: 'Gombak Bypass — Tree Fall Access Block',  severity: 'Awaiting Clearence' },
 ];
 
-// Connection arcs removed as per tactical redesign request
-const arcs = [];
+// Connection arcs removed as per tactical redesign request (see line 227 inside component)
 
 // Component to fly to searched location or reset view
 function FlyTo({ target }) {
@@ -319,7 +318,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
           <>
             <Marker 
               position={[evacuationTarget.lat, evacuationTarget.lon]} 
-              icon={icons.station_pulse}
+              icon={icons.shelter_pulse}
             >
               <Popup autoOpen>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>

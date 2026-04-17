@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Wind, Thermometer, Droplets, Zap } from 'lucide-react';
-import { checkHazardRisk } from '../services/api';
+import { useState, useRef, useMemo } from 'react';
+import { Wind, Thermometer, Droplets } from 'lucide-react';
 
 // Simple hash function to generate a numeric seed from a string
 const getSeed = (str) => {

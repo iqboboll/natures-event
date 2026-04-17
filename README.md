@@ -9,10 +9,7 @@ An asynchronous, event-driven disaster monitoring platform designed for hyper-lo
 graph TD
     A[Client: Tactical Dashboard] -- "1. Intelligence Query" --> B[Backend: FastAPI]
     B -- "2a. Real-time Weather" --> C[WeatherAPI]
-    B -- "2b. Triple-Safe AI Analysis" --> D{AI Hierarchy}
-    D -- "Priority 1" --> E[Vertex AI: Gemini 2.5 Flash]
-    D -- "Fallback 1" --> F[AI Studio: Gemini 1.5 Flash]
-    D -- "Fallback 2" --> G[Groq: Llama 3.3]
+    B -- "2b. Triple-Safe AI Analysis" --> D[Vertex AI: Gemini 2.5 Flash]
     B -- "3. Persistence & Sync" --> H[Cloud Firestore]
     H -- "Live Broadcast" --> A
     B -- "4. Tactical Mapping" --> I[RainViewer Radar & Leaflet]
@@ -20,8 +17,8 @@ graph TD
 
 ## 🌟 Technical Highlights
 
-### 1. Triple-Safe AI Hierarchy
-- **Credit-Prioritized Execution**: Operates primarily on **Vertex AI (Gemini 2.5 Flash)** to leverage GCP credits, with automated failover logic to AI Studio and Groq for 100% decision availability.
+### 1. Vertex-Only AI Hierarchy
+- **Single-Source Intelligence**: Operates exclusively on **Vertex AI (Gemini 2.5 Flash)** to keep the system simple and fully aligned with Google Cloud credits.
 - **Multi-Modal Triage**: Uses Gemini's vision capabilities to parse unstructured disaster imagery, identifying hazards and proposing evacuation targets.
 
 ### 2. Layout Stability & Elite UX
@@ -40,7 +37,7 @@ graph TD
 - **SafetyPath Navigation**: Dynamic polyline generation between user location and AI-identified safe-zone shelters.
 
 ## 🛠️ Stack
-- **Frontend**: React 19, Vite, React-Leaflet, Framer Motion, Firebase SDK.
+- **Frontend**: React 19, Vite, React-Leaflet, Plotly.js, Firebase SDK.
 - **Backend**: Python 3.12, FastAPI, Google GenAI SDK (Vertex AI), Firebase Admin.
 - **Intelligence**: Bernama RSS, GDACS RSS, RainViewer API.
 - **Cloud**: Google Cloud Platform (Vertex AI, Cloud Run), Firebase (Firestore, Auth).

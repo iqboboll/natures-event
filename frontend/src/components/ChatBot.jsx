@@ -28,8 +28,7 @@ export default function ChatBot() {
 
     try {
       // This calls POST /api/chat on the FastAPI backend
-      // Backend uses Groq AI (llama-3.3-70b-versatile) with Malaysia emergency context
-      // Requires GROQ_API_KEY in the backend .env file
+      // Backend uses Vertex AI Gemini for Malaysia emergency context
       const data = await sendChatMessage(trimmed);
       setMessages(prev => [...prev, { sender: 'ai', text: data.response }]);
     } catch (err) {
