@@ -159,12 +159,12 @@ export async function getLiveNews() {
 // Internal Mission Cache (7-14 Day Intelligence)
 function getTacticalCache() {
   return [
-    { time: '1 DAY AGO', text: 'MY: BERNAMA — NADMA issues flood warning for East Coast states due to expected monsoon surge.', url: 'https://bernama.com/en/rssfeed.php', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '2 DAYS AGO', text: 'GLOBAL ALERT — Red Alert for Tropical Cyclone affecting Southeast Asia region. High impact expected.', url: 'https://www.gdacs.org/xml/rss.xml', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
-    { time: '3 DAYS AGO', text: 'MY: BERNAMA — Rainfall exceeds 200mm in Terengganu; residents advised to prepare for evacuation.', url: 'https://bernama.com/en/rssfeed.php', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '5 DAYS AGO', text: 'MY: BERNAMA — Smart Tunnel in Kuala Lumpur activated to mitigate flash flood risks.', url: 'https://bernama.com/en/rssfeed.php', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '1 WEEK AGO', text: 'GLOBAL ALERT — Earthquake of magnitude 6.2 reported near Sumatra. Felt in West Coast Malaysia.', url: 'https://www.gdacs.org/xml/rss.xml', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
-    { time: '10 DAYS AGO', text: 'MY: BERNAMA — MET Malaysia predicts prolonged heavy rain for Johor and Melaka.', url: 'https://bernama.com/en/rssfeed.php', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '14 DAYS AGO', text: 'MY: BERNAMA — Government allocates RM500m for flood relief infrastructure in Kelantan.', url: 'https://bernama.com/en/rssfeed.php', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' }
+    { time: '1 DAY AGO', text: 'MY: BERNAMA — NADMA issues flood warning for East Coast states due to expected monsoon surge.', url: 'https://www.bernama.com/en/news.php?id=2255740', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '2 DAYS AGO', text: 'GLOBAL ALERT — Red Alert for Tropical Cyclone affecting Southeast Asia region. High impact expected.', url: 'https://www.gdacs.org/report.aspx?eventid=14169&eventtype=TC', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
+    { time: '3 DAYS AGO', text: 'MY: BERNAMA — Rainfall exceeds 200mm in Terengganu; residents advised to prepare for evacuation.', url: 'https://www.bernama.com/en/news.php?id=2255471', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '5 DAYS AGO', text: 'MY: BERNAMA — Smart Tunnel in Kuala Lumpur activated to mitigate flash flood risks.', url: 'https://www.bernama.com/en/news.php?id=2255102', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '1 WEEK AGO', text: 'GLOBAL ALERT — Earthquake of magnitude 6.2 reported near Sumatra. Felt in West Coast Malaysia.', url: 'https://www.gdacs.org/report.aspx?eventid=1416866&eventtype=EQ', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
+    { time: '10 DAYS AGO', text: 'MY: BERNAMA — MET Malaysia predicts prolonged heavy rain for Johor and Melaka.', url: 'https://www.bernama.com/en/news.php?id=2254901', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
+    { time: '14 DAYS AGO', text: 'MY: BERNAMA — Government allocates RM500m for flood relief infrastructure in Kelantan.', url: 'https://www.bernama.com/en/news.php?id=2254100', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' }
   ];
 }
