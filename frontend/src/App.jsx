@@ -132,13 +132,16 @@ export default function App() {
       </ErrorBoundary>
 
       {/* Right Sidebar: Chatbot (VAI) + Official News Center */}
-      <div className={`right-sidebar glass scanline ${rightOpen ? 'right-sidebar--open' : ''}`}>
+      <div 
+        className={`right-sidebar glass scanline ${rightOpen ? 'right-sidebar--open' : ''}`}
+        style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+      >
         <ChatBot />
         <AlertSummary />
       </div>
 
       {/* Bottom Panel Group: Left Slot: Image Analyzer | Right Slot: Location Data */}
-      <div className="bottom-panels glass">
+      <div className="bottom-panels glass" style={{ height: '100%', overflow: 'hidden' }}>
         <ErrorBoundary fallback="Image Analyzer unavailable">
           <ImageAnalyzer onAnalysisComplete={(data) => {
             if (data.evacuation_target) {
