@@ -171,12 +171,12 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         <TileLayer url={tacticalMode === 'street' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'} />
         {showRadar && radarPath && <TileLayer url={`https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png`} opacity={0.65} zIndex={100} />}
         <FlyTo target={flyTarget} />
-        {flyTarget && flyTarget.zoom > 10 && (
+        {flyTarget && Array.isArray(flyTarget.coords) && flyTarget.coords.length === 2 && flyTarget.zoom > 10 && (
           <Marker position={flyTarget.coords} icon={icons.user}>
-            <Popup autoOpen><div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}><strong>{t('searchedLoc')}</strong><br/>{flyTarget.coords[0].toFixed(4)}, {flyTarget.coords[1].toFixed(4)}</div></Popup>
+            <Popup autoOpen><div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}><strong>{t('searchedLoc')}</strong><br/>{flyTarget.coords[0]?.toFixed(4)}, {flyTarget.coords[1]?.toFixed(4)}</div></Popup>
           </Marker>
         )}
-        {evacuationTarget && flyTarget && (
+        {evacuationTarget && evacuationTarget.lat && evacuationTarget.lon && flyTarget && Array.isArray(flyTarget.coords) && (
           <>
             <Marker position={[evacuationTarget.lat, evacuationTarget.lon]} icon={icons.shelter_pulse}>
               <Popup autoOpen><div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}><strong style={{ color: 'var(--accent-green)' }}>{t('safeZone')}</strong><br />{evacuationTarget.name}</div></Popup>
@@ -186,8 +186,11 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
             </Polyline>
           </>
         )}
-        {allMarkers.filter(m => (activeFilter === 'all' || m.type === activeFilter)).map((m, i) => (
-          <Marker key={i} position={m.pos} icon={icons[activeFilter === 'all' ? m.type : `${m.type}_pulse`] || icons.flood}>
+        {allMarkers
+          .filter(m => (activeFilter === 'all' || m.type === activeFilter))
+          .filter(m => Array.isArray(m.pos) && m.pos.length === 2 && !isNaN(m.pos[0]) && !isNaN(m.pos[1]))
+          .map((m, i) => (
+          <Marker key={`${m.id || i}`} position={m.pos} icon={icons[activeFilter === 'all' ? m.type : `${m.type}_pulse`] || icons.flood}>
             <Popup><div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}><strong>{m.label}</strong><br/><span style={{ color: m.severity === 'High' ? '#ff4757' : '#00e676' }}>{language === 'en' ? 'Severity' : 'Tahap'}: {m.severity}</span></div></Popup>
           </Marker>
         ))}

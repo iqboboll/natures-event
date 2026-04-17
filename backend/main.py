@@ -1,7 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends # type: ignore
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel # pyright: ignore[reportMissingImports]
-from ai_service import check_hazard_risk, get_chatbot_response, analyze_hazard_image, get_evacuation_plan
+from ai_service import (
+    check_hazard_risk, 
+    get_chatbot_response, 
+    analyze_hazard_image, 
+    get_evacuation_plan,
+    get_strategic_advisory_text
+)
 from weather_service import get_real_weather
 from database import get_db, auth as firebase_auth
 from firebase_admin import auth as fa_auth, messaging
@@ -441,42 +447,25 @@ async def get_strategic_advisory(lang: str = "en"):
     Generates a mission-briefing summary based on the latest 10 news items in the archive.
     Uses Gemini AI to consolidate data into a strategic situation report.
     """
+    db = get_db()
     if not db:
         return {"advisory": "Strategic advisory offline. Database connection required." if lang == "en" else "Penasihat strategik luar talian. Sambungan pangkalan data diperlukan."}
 
     try:
-        # Fetch the last 10 news items for context
+        # 1. Fetch latest 10 news items from archive
         docs = db.collection("news_archive").order_by("timestamp", direction="DESCENDING").limit(10).stream()
-        news_context = []
-        for doc in docs:
-            d = doc.to_dict()
-            news_context.append(f"- {d.get('text')} ({d.get('tag')})")
+        news_items = [{"text": d.to_dict().get("text"), "tag": d.to_dict().get("tag")} for d in docs]
         
-        if not news_context:
-            return {"advisory": "Intelligence channels quiet. No immediate strategic threats identified." if lang == "en" else "Saluran perisikan tenang. Tiada ancaman strategik dikesan."}
+        if not news_items:
+            return {"advisory": "No active intelligence reports found. System in standby." if lang == "en" else "Tiada laporan perisikan aktif ditemui. Sistem dalam keadaan sedia."}
 
-        context_str = "\n".join(news_context)
-        prompt = f"""
-        ACT AS: A National Disaster Intelligence Officer (NADMA Malaysia).
-        TASK: Provide a high-density Strategic Situation Report (SITREP) based on these news items:
-        
-        {context_str}
-        
-        REQUIREMENTS:
-        1. Keep it under 150 words.
-        2. Use professional, tactical tone.
-        3. Identify priority regions and response actions.
-        4. Language: {'English' if lang == 'en' else 'Bahasa Melayu'}.
-        5. DO NOT use emojis. Format as plain tactical text.
-        """
-        
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        
-        return {"advisory": response.text.strip()}
+        # 2. Generate synthesis using Gemini via ai_service
+        advisory_text = await get_strategic_advisory_text(news_items, lang)
+        return {"advisory": advisory_text}
+
     except Exception as e:
         logger.error(f"Advisory Generation Failed: {e}")
-        return {"advisory": "Strategic triage error. Intelligence processing interrupted." if lang == "en" else "Ralat triaj strategik. Pemprosesan perisikan terganggu."}
+        return {"advisory": "Strategic advisory triage failed." if lang == "en" else "Gagal triaj penasihat strategik."}
 
 if __name__ == "__main__":
     import uvicorn
