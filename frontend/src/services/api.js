@@ -19,20 +19,12 @@ export async function checkHazardRisk(location, lat = null, lon = null) {
     return await res.json();
   } catch (err) {
     console.error("checkHazardRisk failed:", err);
-    // Return fallback mock data so the UI still works without the backend
-    return {
-      location,
-      primary_hazard: "Flood",
-      risk_level: "High",
-      explanation: "Backend offline — showing mock data. Start the FastAPI server to get live AI analysis.",
-      weather_data_used: "LOCATION: MALAYSIA - CLIMATE BASELINE. Temperature: 31.5 C. Humidity: 85%. Wind Speed: 15 kph. Precipitation: 45mm.",
-    };
+    throw err;
   }
 }
 
 // -----------------------------------------------------------------------------
-// 2. CHATBOT — POST /api/chat
-//    Sends a message string, returns: { message, response }
+// 2. CHATBOT — POST /api/chat (Streaming)
 // -----------------------------------------------------------------------------
 export async function sendChatMessage(message) {
   try {
@@ -42,13 +34,10 @@ export async function sendChatMessage(message) {
       body: JSON.stringify({ message }),
     });
     if (!res.ok) throw new Error(`Chat API error: ${res.status}`);
-    return await res.json();
+    return res; // Return the raw response so the component can read the stream
   } catch (err) {
     console.error("sendChatMessage failed:", err);
-    return {
-      message,
-      response: "Backend offline — showing mock response. Start the FastAPI server for live Vertex AI Gemini chat.",
-    };
+    throw err;
   }
 }
 
@@ -74,12 +63,7 @@ export async function reportHazard(location, latitude, longitude, imageFile) {
     return await res.json();
   } catch (err) {
     console.error("reportHazard failed:", err);
-    return {
-      location,
-      hazard: "Flood",
-      severity: "High",
-      analysis: "Backend offline — showing mock analysis. Start the FastAPI server for live Vertex AI Gemini image analysis.",
-    };
+    throw err;
   }
 }
 
@@ -136,7 +120,6 @@ export async function getAuthenticatedUser(idToken) {
 // -----------------------------------------------------------------------------
 // 6. LIVE AI NEWS FEED — GET /api/news
 //    Returns: Array of formatted incident objects from Firestore
-//    Fail-safe: Returns tactical intelligence cache if backend is unreachable
 // -----------------------------------------------------------------------------
 export async function getLiveNews() {
   try {
@@ -144,23 +127,26 @@ export async function getLiveNews() {
       method: "GET",
     });
     if (!res.ok) throw new Error(`News API error: ${res.status}`);
-    const data = await res.json();
-    return data && data.length > 0 ? data : getTacticalCache();
+    return await res.json();
   } catch (err) {
     console.error("getLiveNews failed (offline):", err);
-    return getTacticalCache();
+    return [];
   }
 }
 
-// Internal Mission Cache (TACTICAL NATURE EVENTS ONLY) — Filtered for April 2026
-function getTacticalCache() {
-  return [
-    { time: '2 HOURS AGO', text: 'MY: NADMA — Cloud seeding operations initiated in Johor and Melaka to boost dam water levels.', url: 'https://www.bernama.com/en/general/news.php?id=2285120', tag: 'NADMA ALERT', tagColor: 'var(--accent-orange)' },
-    { time: '4 HOURS AGO', text: 'MET MALAYSIA — Monsoon transition phase expected to bring heavy thunderstorms in West Peninsula.', url: 'https://www.met.gov.my/en/berita/monsoon-transition-2026/', tag: 'WEATHER WARNING', tagColor: 'var(--accent-gold)' },
-    { time: '6 HOURS AGO', text: 'MY: BERNAMA — Kedah and Perlis Dams under close monitoring as heatwave persists across North.', url: 'https://www.bernama.com/en/general/news.php?id=2285090', tag: 'ENVIRONMENT', tagColor: 'var(--accent-cyan)' },
-    { time: '1 DAY AGO', text: 'MY: BERNAMA — SMART Tunnel remains on standby as evening storm patterns intensify in Klang Valley.', url: 'https://www.bernama.com/en/general/news.php?id=2284950', tag: 'MY: BERNAMA', tagColor: 'var(--accent-cyan)' },
-    { time: '2 DAYS AGO', text: 'GLOBAL ALERT — GDACS Level 1 Monitoring: Tropical Depression forming in the Philippine Sea.', url: 'https://www.gdacs.org/Alerts/default.aspx', tag: 'GLOBAL ALERT', tagColor: 'var(--accent-red)' },
-    { time: '5 DAYS AGO', text: 'MY: BERNAMA — Fire and Rescue Department on high alert for peatland fires in Sarawak during dry spell.', url: 'https://www.bernama.com/en/general/news.php?id=2284100', tag: 'WILDFIRE RISK', tagColor: 'var(--accent-orange)' },
-    { time: '1 WEEK AGO', text: 'MET MALAYSIA — Tropical Storm Warning: North Borneo coastal areas advised of high waves.', url: 'https://www.met.gov.my/en/berita/ts-warning-borneo/', tag: 'WEATHER ALERT', tagColor: 'var(--accent-gold)' }
-  ];
+// -----------------------------------------------------------------------------
+// 7. EXTERNAL HAZARDS — GET /api/external-hazards
+//    Returns: NASA EONET and USGS Earthquake points
+// -----------------------------------------------------------------------------
+export async function fetchExternalHazards() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/external-hazards`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error(`External Hazards API error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("fetchExternalHazards failed:", err);
+    return [];
+  }
 }

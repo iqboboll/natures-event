@@ -1,7 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends # type: ignore
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel # pyright: ignore[reportMissingImports]
-from ai_service import check_hazard_risk, get_chatbot_response, analyze_hazard_image, get_evacuation_plan
+from ai_service import check_hazard_risk, get_chatbot_stream, analyze_hazard_image, get_evacuation_plan
+from fastapi.responses import StreamingResponse
 from weather_service import get_real_weather
 from database import get_db, auth as firebase_auth
 from firebase_admin import auth as fa_auth, messaging
@@ -154,10 +155,15 @@ async def get_risk(request: LocationRequest):
 @app.post("/api/chat", summary="4. Emergency Chatbot") #/api/chat
 async def chat(request: ChatRequest):
     """
-    Ask emergency chatbot questions like "What should I do during flood?"
+    Ask emergency chatbot questions like "What should I do during flood?" (Streamed)
     """
-    response = await get_chatbot_response(request.message)
-    return {"message": request.message, "response": response}
+    return StreamingResponse(get_chatbot_stream(request.message), media_type="text/plain")
+
+@app.get("/api/external-hazards", summary="Fetch Real-time External Hazards")
+async def get_external_hazards():
+    from external_apis import get_all_external_hazards
+    events = await get_all_external_hazards()
+    return events
 
 @app.post("/api/report", summary=" Report Hazard Incident") #/api/report
 async def report_hazard(

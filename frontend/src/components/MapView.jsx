@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../services/firebaseConfig';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { fetchExternalHazards } from '../services/api';
 
 // Fix default marker icons in webpack/vite bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -23,6 +24,18 @@ const COLORS = {
   shelter: { name: 'green', hex: '#00e676' },
   access: { name: 'orange', hex: '#ff9f43' },
 };
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c;
+}
 
 // Custom colored marker icons with optional sonar pulse
 function createIcon(colorObj, pulse = false) {
@@ -86,24 +99,8 @@ const icons = {
   }),
 };
 
-// Malaysia-focused disaster pins (sample data)
-const markers = [
-  { pos: [3.139, 101.6869], type: 'flood',      label: 'Kuala Lumpur — Urban Flooding',          severity: 'High' },
-  { pos: [5.4164, 100.3327], type: 'monsoon',    label: 'Penang — Monsoon Warning',               severity: 'Medium' },
-  { pos: [1.4927, 103.7414], type: 'flood',      label: 'Johor Bahru — River Overflow Risk',       severity: 'High' },
-  { pos: [5.9804, 116.0735], type: 'earthquake', label: 'Kota Kinabalu — Minor Seismic Activity',  severity: 'Low' },
-  { pos: [4.5841, 103.4248], type: 'flood',      label: 'Kuantan — Flash Flood Alert',             severity: 'High' },
-  { pos: [2.1896, 102.2501], type: 'monsoon',    label: 'Melaka — Heavy Rainfall Advisory',        severity: 'Medium' },
-  { pos: [6.1254, 102.2381], type: 'flood',      label: 'Kota Bharu — Kelantan River Surge',       severity: 'High' },
-  { pos: [3.1412, 101.7588], type: 'medical',    label: 'Hospital Ampang — Emergency Hub',          severity: 'Active' },
-  { pos: [1.5361, 103.7484], type: 'medical',    label: 'Sultanah Aminah — Critical Zone',         severity: 'Alert' },
-  { pos: [3.7915, 103.3241], type: 'shelter',    label: 'SK Beserah — Regional Evacuation Center', severity: 'Safe' },
-  { pos: [5.9328, 116.0645], type: 'shelter',    label: 'KK Sports Complex — Shelter Alpha',       severity: 'Safe' },
-  { pos: [4.4729, 101.3734], type: 'access',     label: 'Gua Musang Highway — Road Closed (Flood)', severity: 'Danger' },
-  { pos: [3.2845, 101.7456], type: 'access',     label: 'Gombak Bypass — Tree Fall Access Block',  severity: 'Awaiting Clearence' },
-];
-
-// Connection arcs removed as per tactical redesign request (see line 227 inside component)
+// Malaysia-focused disaster pins (No longer mocked, filled dynamically)
+const markers = [];
 
 // Component to fly to searched location or reset view
 function FlyTo({ target }) {
@@ -126,10 +123,14 @@ function MapEvents({ onMapClick, isReporting }) {
   return null;
 }
 
-export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter, evacuationTarget, sharedLocation }) {
-  const [searchVal, setSearchVal] = useState('');
+// ── TILE URLs ──
+const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const STREET_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter, activeRegion, userCoords, savedLocations, evacuationTarget, sharedLocation, isDark }) {
   const [flyTarget, setFlyTarget] = useState(null);
-  const [tacticalMode, setTacticalMode] = useState('standard');
+  const [mapMode, setMapMode] = useState('auto'); // 'auto' | 'street'
   const [isScanning, setIsScanning] = useState(false);
   
   // REPORTING STATE
@@ -138,30 +139,32 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   const [reportType, setReportType] = useState('flood');
   const [reportText, setReportText] = useState('');
 
-  // Simple geocoding via Nominatim (free, no key required)
-  const handleSearch = useCallback(async () => {
-    if (!searchVal.trim()) return;
-    setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 3000); // 3s scanning animation
-    try {
-      // NOTE: For production, use a proper geocoding API (Google, Mapbox, etc.)
-      const geoQuery = searchVal.toLowerCase().includes('malaysia') ? searchVal : `${searchVal}, Malaysia`;
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(geoQuery)}&limit=1`
-      );
-      const data = await res.json();
-      if (data.length > 0) {
-        const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        setFlyTarget({ coords, zoom: 12 });
-        // Call the parent's unified search handler with coordinates to avoid ambiguity
-        if (typeof onSearch === 'function') {
-          onSearch(searchVal, coords[0], coords[1]);
+  // React to unified search from the Header component
+  useEffect(() => {
+    if (!sharedLocation) return;
+    
+    const fetchCoordsAndFly = async () => {
+      setIsScanning(true);
+      setTimeout(() => setIsScanning(false), 3000); // 3s scanning animation
+      try {
+        const geoQuery = sharedLocation.toLowerCase().includes('malaysia') 
+          ? sharedLocation 
+          : `${sharedLocation}, Malaysia`;
+          
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(geoQuery)}&limit=1`);
+        const data = await res.json();
+        
+        if (data && data.length > 0) {
+          const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+          setFlyTarget({ coords, zoom: 12 });
         }
+      } catch (err) {
+        console.error('Geocoding failed for unified search:', err);
       }
-    } catch (err) {
-      console.error('Geocoding failed:', err);
-    }
-  }, [searchVal, onSearch]);
+    };
+    
+    fetchCoordsAndFly();
+  }, [sharedLocation]);
 
   const handleReportSubmit = async () => {
     if (!reportCoords) return;
@@ -184,7 +187,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   };
 
   const handleResetClick = () => {
-    setSearchVal('');
     setFlyTarget({ coords: [4.2105, 101.9758], zoom: 6 });
     if (typeof onReset === 'function') {
       onReset();
@@ -208,10 +210,15 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     }
   }, [showRadar, radarPath]);
 
-  // Style constants
-  const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const RADAR_TILES = radarPath ? `https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png` : null;
+
+  // FIX #2: Resolve tile URL based on mode + theme
+  const resolvedTileUrl =
+    mapMode === 'street' ? STREET_TILES :
+    isDark ? DARK_TILES : LIGHT_TILES;
+
+  // FIX #1: Build a stable key so MapContainer re-mounts when tiles change
+  const mapKey = `${mapMode}-${isDark ? 'dark' : 'light'}`;
 
   // Add real-time reports to markers
   const [liveMarkers, setLiveMarkers] = useState([]);
@@ -223,25 +230,71 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     });
   }, []);
 
+  const [externalMarkers, setExternalMarkers] = useState([]);
+  
+  useEffect(() => {
+    async function loadExternalData() {
+      const data = await fetchExternalHazards();
+      if (data && data.length > 0) {
+        const mapped = data.map(item => {
+          let type = 'medical';
+          if (item.source === 'USGS' || item.type.toLowerCase().includes('earthquake')) type = 'earthquake';
+          else if (item.type.toLowerCase().includes('fire')) type = 'wildfire';
+          else if (item.type.toLowerCase().includes('storm') || item.type.toLowerCase().includes('monsoon')) type = 'monsoon';
+          else if (item.type.toLowerCase().includes('flood')) type = 'flood';
+
+          let severity = 'Medium';
+          if (item.mag && item.mag >= 5.0) severity = 'High';
+          
+          return {
+            id: `ext-${Math.random()}`,
+            pos: [item.lat, item.lon],
+            type,
+            label: `[${item.source}] ${item.title}`,
+            severity,
+          };
+        });
+        setExternalMarkers(mapped);
+      }
+    }
+    loadExternalData();
+  }, []);
+
   const arcs = []; // Tactical connection arcs (placeholder for future sensor mesh)
-  const allMarkers = [...markers, ...liveMarkers];
+  const allRawMarkers = [...markers, ...liveMarkers, ...externalMarkers];
+  
+  const allMarkers = allRawMarkers.filter(m => {
+    if (activeRegion === 'MY LOCATIONS') {
+      let isWithin5km = false;
+      if (Array.isArray(m.pos) && m.pos.length === 2) {
+         if (userCoords && getDistance(m.pos[0], m.pos[1], userCoords.lat, userCoords.lon) <= 5) isWithin5km = true;
+         if (savedLocations && savedLocations.length > 0) {
+           savedLocations.forEach(loc => {
+             if (loc.lat && loc.lon && getDistance(m.pos[0], m.pos[1], loc.lat, loc.lon) <= 5) isWithin5km = true;
+           });
+         }
+      }
+      return isWithin5km;
+    }
+    return true;
+  });
 
   return (
-    <div className={`map-area map-${tacticalMode}`}>
+    <div className={`map-area`}>
       {/* CyberScan Overlay */}
       {isScanning && <div className="radar-scan" />}
       
-      {/* Map Mode Switcher */}
+      {/* Map Mode Switcher — FIX #1: Proper toggle (clicking active = back to auto) */}
       <div className="map-switcher">
         <button 
-          className={`map-switcher__btn ${tacticalMode === 'standard' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => { setTacticalMode('standard'); setShowRadar(false); }}
+          className={`map-switcher__btn ${mapMode === 'auto' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => { setMapMode('auto'); setShowRadar(false); }}
         >
-          DARK
+          {isDark ? 'DARK' : 'LIGHT'}
         </button>
         <button 
-          className={`map-switcher__btn ${tacticalMode === 'street' ? 'map-switcher__btn--active' : ''}`}
-          onClick={() => { setTacticalMode('street'); setShowRadar(false); }}
+          className={`map-switcher__btn ${mapMode === 'street' ? 'map-switcher__btn--active' : ''}`}
+          onClick={() => { setMapMode(mapMode === 'street' ? 'auto' : 'street'); setShowRadar(false); }}
         >
           STREET
         </button>
@@ -260,22 +313,10 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
         </button>
       </div>
 
-      {/* Search Overlay */}
-      <div className="map-search">
-        <input
-          className="map-search__input"
-          placeholder="ENTER ADDRESS OR PIN LOCATION"
-          value={searchVal}
-          onChange={e => setSearchVal(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-        />
-        <button className="map-search__btn" onClick={handleSearch}>SEARCH</button>
-        <button className="map-search__btn map-search__btn--reset" onClick={handleResetClick}>RESET</button>
-      </div>
-
-      {/* Leaflet Map - Re-mounting MapContainer ensures TileLayer swap is perfect */}
+      {/* Map search has been relocated to the Header */}
+      {/* Leaflet Map — key forces re-mount when tile source changes */}
       <MapContainer
-        key={tacticalMode}
+        key={mapKey}
         center={[4.2105, 103.5]} // Center of Malaysia
         zoom={7}
         style={{ width: '100%', height: '100%' }}
@@ -283,7 +324,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
       >
         <MapEvents isReporting={isReporting} onMapClick={setReportCoords} />
         <TileLayer
-          url={tacticalMode === 'street' ? LIGHT_TILES : DARK_TILES}
+          url={resolvedTileUrl}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           maxZoom={19}
         />
