@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 
-export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onToggleRight, isDark, isMobile }) {
+export default function Header({ 
+  onLoginClick, onThemeToggle, onToggleLeft, onToggleRight, isDark, isMobile, 
+  onSearch, onReset, activeRegion, setActiveRegion, onGetLocation, onSaveLocation,
+  notificationsEnabled, onToggleNotifications, user, savedLocations 
+}) {
   const [time, setTime] = useState(new Date());
-  const [activeRegion, setActiveRegion] = useState('REGIONS');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locDropdownOpen, setLocDropdownOpen] = useState(false);
+
+  // FIX #3: Hover-reveal search bar state
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [searchVal, setSearchVal] = useState('');
 
   // Auto-update timestamp every second
   useEffect(() => {
@@ -17,7 +25,27 @@ export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onTo
     hour12: false
   });
 
-  const regions = ['REGIONS', 'DISTRICT', 'MY LOCATIONS'];
+  const regionsList = [
+    'Johor', 'Kedah', 'Kelantan', 'Malacca', 'Negeri Sembilan', 'Pahang', 
+    'Penang', 'Perak', 'Perlis', 'Sabah', 'Sarawak', 'Selangor', 
+    'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'
+  ];
+
+  const handleSearchSubmit = () => {
+    if (!searchVal.trim()) return;
+    if (typeof onSearch === 'function') {
+      onSearch(searchVal);
+    }
+    setSearchExpanded(false);
+  };
+
+  const handleSearchReset = () => {
+    setSearchVal('');
+    setSearchExpanded(false);
+    if (typeof onReset === 'function') {
+      onReset();
+    }
+  };
 
   return (
     <header className="header">
@@ -29,18 +57,91 @@ export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onTo
         </span>
       </div>
 
-      {/* Region Filter Buttons (Desktop) */}
-      <nav className="header__nav">
-        {regions.map(r => (
-          <button
-            key={r}
-            className={`header__nav-btn ${activeRegion === r ? 'header__nav-btn--active' : ''}`}
-            onClick={() => setActiveRegion(r)}
-          >
-            {r}
-          </button>
-        ))}
+      {/* Locations Group Dropdown (Desktop) */}
+      <nav className="header__nav" style={{ position: 'relative' }}>
+        <button
+          className={`header__nav-btn ${locDropdownOpen ? 'header__nav-btn--active' : ''}`}
+          onClick={() => setLocDropdownOpen(!locDropdownOpen)}
+        >
+          LOCATIONS ▼
+        </button>
+        
+        {locDropdownOpen && (
+          <div className="header__dropdown glass" style={{ position: 'absolute', top: '100%', left: 0, padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px', width: '200px', zIndex: 100 }}>
+            
+            {/* Regions Submenu */}
+            <div style={{ paddingBottom: '5px', borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--accent-cyan)' }}>REGIONS</span>
+              <div style={{ maxHeight: '100px', overflowY: 'auto', marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {regionsList.map(r => (
+                  <button key={r} className={`header__nav-btn ${activeRegion === r ? 'header__nav-btn--active' : ''}`} style={{ fontSize: '11px', textAlign: 'left', padding: '4px' }} onClick={() => { setActiveRegion(r); onSearch(r); setLocDropdownOpen(false); }}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* District Target */}
+            <div style={{ paddingBottom: '5px', borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--accent-cyan)' }}>DISTRICT (GPS)</span>
+              <button className="header__nav-btn" style={{ fontSize: '11px', width: '100%', textAlign: 'left', padding: '4px', marginTop: '5px' }} onClick={() => { setActiveRegion('DISTRICT'); onGetLocation(); setLocDropdownOpen(false); }}>
+                Find My District
+              </button>
+            </div>
+
+            {/* My Locations Submenu */}
+            <div>
+              <span style={{ fontSize: '10px', color: 'var(--accent-cyan)' }}>MY LOCATIONS (5KM RADIUS)</span>
+              <button className={`header__nav-btn ${activeRegion === 'MY LOCATIONS' ? 'header__nav-btn--active' : ''}`} style={{ fontSize: '11px', width: '100%', textAlign: 'left', padding: '4px', marginTop: '5px' }} onClick={() => { setActiveRegion('MY LOCATIONS'); setLocDropdownOpen(false); }}>
+                Activate Saved Radius
+              </button>
+              <div style={{ maxHeight: '100px', overflowY: 'auto', marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {savedLocations.map((loc, i) => (
+                  <button key={i} className="header__nav-btn" style={{ fontSize: '10px', color: '#8899aa', textAlign: 'left', padding: '2px 4px' }} onClick={() => { onSearch(loc.name); setLocDropdownOpen(false); }}>
+                    ★ {loc.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
       </nav>
+
+      {/* FIX #3: Hover-reveal Search Bar (Desktop) */}
+      <div 
+        className={`header__search ${searchExpanded ? 'header__search--expanded' : ''}`}
+        onMouseEnter={() => setSearchExpanded(true)}
+        onMouseLeave={() => { if (!searchVal) setSearchExpanded(false); }}
+      >
+        <button 
+          className="header__search-icon" 
+          onClick={() => setSearchExpanded(prev => !prev)}
+          title="Search location"
+        >
+          🔍
+        </button>
+        {searchExpanded && (
+          <div className="header__search-bar fade-in">
+            <input
+              className="header__search-input"
+              placeholder="Search location..."
+              value={searchVal}
+              onChange={e => setSearchVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+              autoFocus
+            />
+            <button className="header__search-go" onClick={handleSearchSubmit}>GO</button>
+            <button className="header__search-go" title="GPS Search" style={{ background: 'transparent', color: 'var(--accent-cyan)' }} onClick={onGetLocation}>📍</button>
+            {searchVal && (
+              <>
+                <button className="header__search-go" title="Save Location" style={{ background: 'transparent', color: 'var(--accent-gold)' }} onClick={onSaveLocation}>⭐</button>
+                <button className="header__search-clear" onClick={handleSearchReset}>✕</button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Right Section: Timestamp, Status, Login, Theme (Desktop) */}
       <div className="header__right">
@@ -48,6 +149,9 @@ export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onTo
         <span className="header__status header__status--high">HIGH ALERT</span>
         <button className="header__login-btn" onClick={onLoginClick}>
           LOGIN / REGISTER
+        </button>
+        <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+          {notificationsEnabled ? '🔕' : '🔔'}
         </button>
         <button className="header__theme-btn" onClick={onThemeToggle} title="Toggle theme">
           {isDark ? '☀️' : '🌙'}
@@ -81,16 +185,26 @@ export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onTo
 
       {/* Mobile Dropdown Menu */}
       <div className={`header__mobile-menu ${menuOpen ? 'header__mobile-menu--open' : ''}`}>
-        <nav className="header__nav">
-          {regions.map(r => (
-            <button
-              key={r}
-              className={`header__nav-btn ${activeRegion === r ? 'header__nav-btn--active' : ''}`}
-              onClick={() => { setActiveRegion(r); setMenuOpen(false); }}
-            >
-              {r}
-            </button>
-          ))}
+        <nav className="header__nav" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ color: 'var(--accent-cyan)', fontSize: '12px', marginTop: '10px' }}>REGIONS</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', padding: '5px 0' }}>
+            {regionsList.slice(0, 6).map(r => (
+              <button
+                key={r}
+                className={`header__nav-btn ${activeRegion === r ? 'header__nav-btn--active' : ''}`}
+                onClick={() => { setActiveRegion(r); onSearch(r); setMenuOpen(false); }}
+              >
+                {r}
+              </button>
+            ))}
+            <span style={{ fontSize: '10px', alignSelf: 'center', color: '#889' }}>...</span>
+          </div>
+          <button className="header__nav-btn" onClick={() => { setActiveRegion('DISTRICT'); onGetLocation(); setMenuOpen(false); }}>
+            📍 FIND MY DISTRICT
+          </button>
+          <button className={`header__nav-btn ${activeRegion === 'MY LOCATIONS' ? 'header__nav-btn--active' : ''}`} onClick={() => { setActiveRegion('MY LOCATIONS'); setMenuOpen(false); }}>
+            ⭐ MY LOCATIONS (5KM FILTER)
+          </button>
         </nav>
         <div className="header__right">
           <span className="header__timestamp">LAST SYNC: {formattedTime}</span>
@@ -98,8 +212,11 @@ export default function Header({ onLoginClick, onThemeToggle, onToggleLeft, onTo
           <button className="header__login-btn" onClick={() => { onLoginClick(); setMenuOpen(false); }}>
             LOGIN / REGISTER
           </button>
+          <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+            {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
+          </button>
           <button className="header__theme-btn" onClick={onThemeToggle} title="Toggle theme">
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? 'Theme: Dark' : 'Theme: Light'}
           </button>
         </div>
       </div>

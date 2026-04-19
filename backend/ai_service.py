@@ -162,10 +162,11 @@ def _parse_hazard_response(text: str):
 # ============================================================
 # 3. EMERGENCY CHATBOT — Powered by Gemini Vertex AI
 # ============================================================
-async def get_chatbot_response(message: str):
+async def get_chatbot_stream(message: str):
     client, _ = get_gemini_client()
     if not client:
-        return "Mocked response (No AI keys set): Head to higher ground immediately and listen to local authorities."
+        yield "System: AI provider keys not configured. Please listen to local authorities and head to higher ground if instructed."
+        return
         
     # --- RAG IMPLEMENTATION ---
     rag_context = ""
@@ -215,15 +216,17 @@ async def get_chatbot_response(message: str):
 
     try:
         full_prompt = f"{system_prompt}\n\nUser question: {message}"
-        response = await client.aio.models.generate_content(
+        response = await client.aio.models.generate_content_stream(
             model=GEMINI_MODEL,
             contents=full_prompt,
         )
-        logger.info("✅ Chatbot Response by Gemini (Vertex)")
-        return response.text
+        async for chunk in response:
+            if chunk.text:
+                yield chunk.text
+        logger.info("✅ Chatbot Response Stream completed by Gemini (Vertex)")
     except Exception as e:
-        logger.error(f"Gemini chatbot error: {e}")
-        return "Error: Vertex Gemini service is unavailable. Please try again later."
+        logger.error(f"Gemini chatbot streaming error: {e}")
+        yield f"Error: Vertex Gemini service is unavailable. Please try again later."
 
 
 # ============================================================

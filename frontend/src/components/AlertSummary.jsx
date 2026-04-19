@@ -12,12 +12,11 @@ export default function AlertSummary() {
         if (liveNews && liveNews.length > 0) {
           setNews(liveNews);
         } else {
-          setNews([
-            { time: 'SEARCHING', text: 'Connecting to official news channels...', url: '#', tag: 'SYSTEM' },
-          ]);
+          setNews([]);
         }
       } catch (error) {
         console.error("Failed to fetch news:", error);
+        setNews([]);
       } finally {
         setLoading(false);
       }
@@ -36,50 +35,59 @@ export default function AlertSummary() {
         </span>
       </div>
       <div className="panel-body">
-        {news.slice(0, 8).map((n, i) => (
-          <div className="alert-item fade-in" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
-            <div className="alert-item__header">
-              <span className="alert-item__type" style={{ color: n.tagColor || 'var(--accent-gold)' }}>
-                [{n.tag || 'OFFICIAL UPDATE'}]
-              </span>
-              <span className="alert-item__time">{n.time}</span>
-            </div>
-            <div className="alert-item__desc" style={{ marginBottom: '8px' }}>{n.text}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span 
-                className="alert-item__urgency" 
-                style={{ 
-                  background: `${n.tagColor || 'var(--accent-cyan)'}22`, 
-                  color: n.tagColor || 'var(--accent-cyan)' 
-                }}
-              >
-                {n.tag}
-              </span>
-              {n.url && n.url !== '#' && (
-                <a 
-                  href={n.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="telemetry"
+        {news.slice(0, 8).map((n, i) => {
+          const hasLink = n.url && n.url !== '#';
+
+          return (
+            <div
+              className={`alert-item fade-in ${hasLink ? 'alert-item--clickable' : ''}`}
+              key={i}
+              style={{ animationDelay: `${i * 0.1}s`, cursor: hasLink ? 'pointer' : 'default' }}
+              onClick={() => {
+                // FIX #4: Clicking the entire card opens the specific article URL
+                if (hasLink) {
+                  window.open(n.url, '_blank', 'noopener,noreferrer');
+                }
+              }}
+            >
+              <div className="alert-item__header">
+                <span className="alert-item__type" style={{ color: n.tagColor || 'var(--accent-gold)' }}>
+                  [{n.tag || 'OFFICIAL UPDATE'}]
+                </span>
+                <span className="alert-item__time">{n.time}</span>
+              </div>
+              <div className="alert-item__desc" style={{ marginBottom: '8px' }}>{n.text}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span 
+                  className="alert-item__urgency" 
                   style={{ 
-                    fontSize: '9px', 
-                    color: 'var(--accent-cyan)', 
-                    textDecoration: 'none',
-                    fontWeight: '700',
-                    letterSpacing: '1px',
-                    border: '1px solid var(--accent-cyan-dim)',
-                    padding: '2px 8px',
-                    borderRadius: '2px'
+                    background: `${n.tagColor || 'var(--accent-cyan)'}22`, 
+                    color: n.tagColor || 'var(--accent-cyan)' 
                   }}
-                  onMouseOver={(e) => e.target.style.background = 'var(--accent-cyan-dim)'}
-                  onMouseOut={(e) => e.target.style.background = 'transparent'}
                 >
-                  CLICK HERE
-                </a>
-              )}
+                  {n.tag}
+                </span>
+                {hasLink && (
+                  <span
+                    className="telemetry"
+                    style={{ 
+                      fontSize: '9px', 
+                      color: 'var(--accent-cyan)', 
+                      fontWeight: '700',
+                      letterSpacing: '1px',
+                      border: '1px solid var(--accent-cyan-dim)',
+                      padding: '2px 8px',
+                      borderRadius: '2px',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    READ MORE →
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {news.length === 0 && !loading && (
           <div className="text-muted" style={{ fontSize: '10px', textAlign: 'center', marginTop: '20px' }}>
             Official channels currently quiet.

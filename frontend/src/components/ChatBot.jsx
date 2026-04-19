@@ -27,14 +27,33 @@ export default function ChatBot() {
     setLoading(true);
 
     try {
-      // This calls POST /api/chat on the FastAPI backend
-      // Backend uses Vertex AI Gemini for Malaysia emergency context
-      const data = await sendChatMessage(trimmed);
-      setMessages(prev => [...prev, { sender: 'ai', text: data.response }]);
+      // This calls POST /api/chat on the FastAPI backend (Streamed)
+      const res = await sendChatMessage(trimmed);
+      setLoading(false); // Stop "Thinking..." once we get a response object
+      
+      setMessages(prev => [...prev, { sender: 'ai', text: '' }]);
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let aiText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        aiText += chunk;
+        
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1].text = aiText;
+          return newMsgs;
+        });
+      }
     } catch (err) {
+      setLoading(false);
       setMessages(prev => [...prev, { sender: 'ai', text: 'Error connecting to AI service. Please ensure the backend is running.' }]);
     }
-    setLoading(false);
   };
 
   return (

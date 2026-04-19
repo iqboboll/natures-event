@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Wind, Thermometer, Droplets } from 'lucide-react';
 
 // Simple hash function to generate a numeric seed from a string

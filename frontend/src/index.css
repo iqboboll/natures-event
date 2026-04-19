@@ -149,62 +149,106 @@ body {
   background: var(--accent-cyan-dim);
 }
 
-/* ---------- Dashboard Grid Layout ---------- */
+/* ---------- Dashboard Flex Layout ---------- */
 .dashboard {
-  display: grid;
-  grid-template-rows: 60px 1fr 340px;
-  grid-template-columns: 280px 1fr 300px;
-  grid-template-areas:
-    "header  header  header"
-    "left    map     right"
-    "bottom  bottom  bottom";
+  display: flex;
+  flex-direction: column;
   position: fixed;
   inset: 0;
-  gap: 1px;
   background: var(--border-color);
   overflow: hidden;
 }
 
-/* === MOBILE RESPONSIVE ADAPTATIONS === */
-@media (max-width: 1024px) {
-  .dashboard {
-    grid-template-columns: 1fr;
-    grid-template-rows: 60px 1fr 60px; /* Header, Map, Bottom Tab */
-    grid-template-areas:
-      "header"
-      "map"
-      "bottom-tab";
-  }
-
-  /* Sidebars become absolute retractable drawers */
-  .left-sidebar, .right-sidebar {
-    position: absolute;
-    top: 60px;
-    bottom: 0;
-    width: 280px;
-    z-index: 2000;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--bg-primary);
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-  }
-
-  .left-sidebar {
-    left: 0;
-    transform: translateX(-100%);
-  }
-
-  .right-sidebar {
-    right: 0;
-    transform: translateX(100%);
-  }
-
-  .left-sidebar--open { transform: translateX(0); }
-  .right-sidebar--open { transform: translateX(0); }
-
-  .bottom-panels {
-    display: none; /* Hidden on mobile by default, replaced by tab bar */
-  }
+.dashboard-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
+
+.top-group {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bottom-group {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bottom-group__left {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bottom-group__right {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── Resize Handles ── */
+.resize-handle {
+  background: var(--border-color);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--accent-cyan-dim);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.resize-handle--row {
+  height: 5px;
+  cursor: row-resize;
+  width: 100%;
+}
+
+.resize-handle--col {
+  width: 5px;
+  cursor: col-resize;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  border-radius: 1px;
+  background: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.resize-handle:hover::after {
+  opacity: 0.6;
+}
+
+.resize-handle--row::after {
+  width: 40px;
+  height: 2px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.resize-handle--col::after {
+  width: 2px;
+  height: 40px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Tablet responsive rules removed — tablet now shares the mobile stacked layout */
 
 /* ---------- Panel / Card ---------- */
 .panel {
@@ -402,6 +446,97 @@ body {
   box-shadow: var(--shadow-glow-cyan);
 }
 
+/* ── Header Search Bar (Hover-reveal) ── */
+.header__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.header__search-icon {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.header__search-icon:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+.header__search-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-card);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.header__search-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 6px 10px;
+  width: 180px;
+  outline: none;
+  letter-spacing: 0.5px;
+  transition: border-color 0.2s;
+  border-radius: 2px;
+}
+
+.header__search-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.15);
+}
+
+.header__search-go,
+.header__search-clear {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.header__search-go:hover {
+  background: var(--accent-cyan-dim);
+  border-color: var(--accent-cyan);
+}
+
+.header__search-clear {
+  color: var(--text-muted);
+  padding: 6px 6px;
+}
+
+.header__search-clear:hover {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
 .header__right {
   display: flex;
   align-items: center;
@@ -519,10 +654,11 @@ body {
 
 /* ---------- Map Area ---------- */
 .map-area {
-  grid-area: map;
+  flex: 1;
   position: relative;
   background: var(--bg-secondary);
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -650,14 +786,7 @@ body {
   box-shadow: 0 0 6px currentColor;
 }
 
-/* ---------- Bottom Panel Group ---------- */
-.bottom-panels {
-  grid-area: bottom;
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 1px;
-  background: var(--border-color);
-}
+/* ---------- Bottom Panel Group (replaced by .bottom-group) ---------- */
 
 /* ---------- News Feed ---------- */
 .news-item {
@@ -997,6 +1126,75 @@ body {
   color: var(--accent-cyan);
 }
 
+/* Clickable alert card (Fix #4) */
+.alert-item--clickable {
+  transition: background 0.15s, border-color 0.15s;
+  border-radius: 3px;
+  padding: 7px 6px;
+}
+.alert-item--clickable:hover {
+  background: rgba(0, 212, 255, 0.06);
+  border-color: var(--accent-cyan-dim);
+}
+
+/* ---------- Community Incidents (NewsFeed) ---------- */
+.news-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-item__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.news-item__time {
+  font-size: 10px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.news-item__relative {
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.news-item__text {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 3px;
+}
+
+.news-item__desc {
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  font-style: italic;
+  margin-bottom: 4px;
+  padding-left: 6px;
+  border-left: 2px solid var(--border-color);
+}
+
+.news-item__tag {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-top: 2px;
+}
+
 /* ---------- Auth Modal ---------- */
 .modal-overlay {
   position: fixed;
@@ -1311,9 +1509,9 @@ body {
 }
 
 /* =============================================================================
-   MOBILE RESPONSIVE — All screens ≤ 768px
+   MOBILE OVERRIDES — Screens ≤ 1024px (Tablet & Mobile overlap layout)
    ============================================================================= */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   /* --- Root & Body: Allow vertical scrolling --- */
   html, body, #root {
     overflow: auto;
@@ -1336,9 +1534,35 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     gap: 1px;
-    grid-template-rows: unset;
-    grid-template-columns: unset;
-    grid-template-areas: unset;
+  }
+
+  .dashboard-body {
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  .top-group {
+    flex-direction: column;
+    height: auto !important;
+  }
+
+  .bottom-group {
+    display: flex !important;
+    flex-direction: column;
+    flex: none !important;
+    order: 4;
+    scroll-margin-top: 70px;
+  }
+
+  .bottom-group__left,
+  .bottom-group__right {
+    width: 100% !important;
+    height: auto;
+  }
+
+  .resize-handle {
+    display: none !important;
   }
 
   /* --- Header: Compact + Hamburger --- */
@@ -1367,6 +1591,10 @@ body {
   .header__right {
     display: none;
   }
+  /* Ensure the mobile menu's copy of header__right IS visible */
+  .header__mobile-menu .header__right {
+    display: flex;
+  }
   .header__hamburger {
     display: flex;
     margin-left: auto;
@@ -1378,9 +1606,12 @@ body {
     display: flex;
     align-items: center;
   }
-  /* Hide toggle drawer buttons — content stacks inline on mobile */
+  /* Show hamburger and toggle buttons on mobile */
   .header__mobile-controls {
-    display: none;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-left: auto;
   }
 
   /* --- Map: Full width, prominent --- */
@@ -1390,6 +1621,7 @@ body {
     height: 45vh;
     width: 100%;
     position: relative;
+    flex: none !important; /* CRITICAL: Prevent flex from collapsing map height */
   }
   .map-search {
     left: 10px;
@@ -1436,31 +1668,19 @@ body {
     flex-direction: column;
     gap: 1px;
     overflow: visible;
+    scroll-margin-top: 70px;
   }
 
   .left-sidebar {
     order: 2;
   }
 
+  /* Hide right sidebar on mobile — ChatBot is only via floating FAB */
   .right-sidebar {
-    order: 3;
+    display: none !important;
   }
 
-  /* Show the VAI chatbot inline — it's also available via the floating FAB */
-  .right-sidebar > .panel:first-child {
-    display: flex;
-    max-height: 350px;
-  }
-
-  /* --- Bottom Panels: Force visible, full-width stack --- */
-  .bottom-panels {
-    display: grid !important;
-    order: 4;
-    grid-template-columns: 1fr !important;
-    gap: 1px;
-    height: auto !important;
-    overflow: visible !important;
-  }
+  /* --- Bottom Group: handled by mobile overrides above --- */
 
   /* --- Panel: Auto height so they size to content --- */
   .panel {
@@ -1722,10 +1942,7 @@ body {
   overflow: hidden;
 }
 
-.bottom-panels {
-  height: 100%;
-  overflow: hidden;
-}
+/* .bottom-panels removed — replaced by .bottom-group */
 
 /* --- Metric Card Enhancements --- */
 .metric-card {
