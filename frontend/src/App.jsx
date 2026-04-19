@@ -30,6 +30,26 @@ export default function App() {
   const [sharedRiskData, setSharedRiskData] = useState(null);
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [userCoords, setUserCoords] = useState(null);
+  const [evacuationTarget, setEvacuationTarget] = useState(null);
+
+  // NEW FEATURE STATES
+  const [activeRegion, setActiveRegion] = useState('REGIONS');
+  const [savedLocations, setSavedLocations] = useState(() => {
+    const saved = localStorage.getItem('savedLocations');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notificationsEnabled') === 'true';
+  });
+
+  // ── RESIZABLE PANEL STATE ──
+  const [topRatio, setTopRatio] = useState(0.62);
+  const [leftWidth, setLeftWidth] = useState(280);
+  const [rightWidth, setRightWidth] = useState(300);
+  const [bottomLeftWidth, setBottomLeftWidth] = useState(320);
+  const dashBodyRef = useRef(null);
+  const resizingRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -196,77 +216,6 @@ export default function App() {
     }
   };
 
-  // --- NEW CAPABILITIES: GPS & LOCATION SAVING ---
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-    setLoadingRisk(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      setUserCoords({ lat, lon });
-
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const data = await res.json();
-        const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || "Current Location";
-        // Run standard search using the found city name
-        await handleUnifiedSearch(city, lat, lon);
-      } catch (err) {
-        console.error("Reverse geocoding failed", err);
-        await handleUnifiedSearch(`Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`, lat, lon);
-      }
-    }, (err) => {
-      setLoadingRisk(false);
-      alert("Unable to retrieve location: " + err.message);
-    });
-  };
-
-  const handleSaveLocation = () => {
-    if (!sharedLocation) return;
-    // Assume user coordinates is the active GPS or null if just a text search
-    const locObj = {
-      name: sharedLocation,
-      lat: userCoords ? userCoords.lat : null,
-      lon: userCoords ? userCoords.lon : null,
-      timestamp: new Date().toISOString()
-    };
-
-    // Prevent exactly identical string duplicates
-    if (savedLocations.find(loc => loc.name === sharedLocation)) return;
-
-    const newList = [...savedLocations, locObj];
-    setSavedLocations(newList);
-    localStorage.setItem('savedLocations', JSON.stringify(newList));
-    alert(`Saved ${sharedLocation} to My Locations!`);
-  };
-
-  // --- NEW CAPABILITIES: NOTIFICATIONS ---
-  const handleToggleNotifications = () => {
-    if (!user) {
-      setShowAuth(true); // Must be logged in
-      return;
-    }
-    if (notificationsEnabled) {
-      setNotificationsEnabled(false);
-      localStorage.setItem('notificationsEnabled', 'false');
-    } else {
-      if ('Notification' in window) {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            setNotificationsEnabled(true);
-            localStorage.setItem('notificationsEnabled', 'true');
-            new Notification("Notifications Enabled", { body: "You will now receive tactical alerts." });
-          } else {
-            alert("Notification permission denied by the browser.");
-          }
-        });
-      }
-    }
-  };
-
   const [liveReports, setLiveReports] = useState([]);
   useEffect(() => {
     const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
@@ -312,6 +261,7 @@ export default function App() {
       />
 
       {/* ── DASHBOARD BODY (Vertically Resizable Top/Bottom Groups) ── */}
+      <StrategicAdvisory />
       <div className="dashboard-body" ref={dashBodyRef}>
 
         {/* ── TOP GROUP: Community Incidents | Map | ChatBot ── */}

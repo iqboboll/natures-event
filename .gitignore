@@ -10,6 +10,8 @@ venv.bak/
 # Credentials (CRITICAL: Do not push API keys to GitHub!)
 firebase-service-account.json
 
+flood-risk-f3fae-f1e657183174.json
+
 # Python
 __pycache__/
 *.py[cod]
