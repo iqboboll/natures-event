@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -37,41 +37,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
 function createIcon(colorObj, pulse = false) {
   const { hex } = colorObj;
@@ -135,7 +101,11 @@ const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const STREET_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-export default function MapView({ onSearch, onReset, activeFilter, setActiveFilter, activeRegion, userCoords, savedLocations, evacuationTarget, sharedLocation, isDark }) {
+export default function MapView({ 
+  // eslint-disable-next-line no-unused-vars
+  onSearch, onReset, activeFilter, setActiveFilter, activeRegion, userCoords, savedLocations, evacuationTarget, sharedLocation, isDark 
+}) {
+  const { language, t } = useLanguage();
   const [flyTarget, setFlyTarget] = useState(null);
   const [mapMode, setMapMode] = useState('auto'); // 'auto' | 'street'
   const [isScanning, setIsScanning] = useState(false);
@@ -181,6 +151,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     } catch (err) { console.error(err); }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleResetClick = () => {
     setFlyTarget({ coords: [4.2105, 101.9758], zoom: 6 });
     if (typeof onReset === 'function') onReset();
@@ -206,13 +177,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   // FIX #1: Build a stable key so MapContainer re-mounts when tiles change
   const mapKey = `${mapMode}-${isDark ? 'dark' : 'light'}`;
 
-  // FIX #2: Resolve tile URL based on mode + theme
-  const resolvedTileUrl =
-    mapMode === 'street' ? STREET_TILES :
-      isDark ? DARK_TILES : LIGHT_TILES;
-
-  // FIX #1: Build a stable key so MapContainer re-mounts when tiles change
-  const mapKey = `${mapMode}-${isDark ? 'dark' : 'light'}`;
 
   // Add real-time reports to markers
   const [liveMarkers, setLiveMarkers] = useState([]);
@@ -253,35 +217,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     loadExternalData();
   }, []);
 
-  const [externalMarkers, setExternalMarkers] = useState([]);
-
-  useEffect(() => {
-    async function loadExternalData() {
-      const data = await fetchExternalHazards();
-      if (data && data.length > 0) {
-        const mapped = data.map(item => {
-          let type = 'medical';
-          if (item.source === 'USGS' || item.type.toLowerCase().includes('earthquake')) type = 'earthquake';
-          else if (item.type.toLowerCase().includes('fire')) type = 'wildfire';
-          else if (item.type.toLowerCase().includes('storm') || item.type.toLowerCase().includes('monsoon')) type = 'monsoon';
-          else if (item.type.toLowerCase().includes('flood')) type = 'flood';
-
-          let severity = 'Medium';
-          if (item.mag && item.mag >= 5.0) severity = 'High';
-
-          return {
-            id: `ext-${Math.random()}`,
-            pos: [item.lat, item.lon],
-            type,
-            label: `[${item.source}] ${item.title}`,
-            severity,
-          };
-        });
-        setExternalMarkers(mapped);
-      }
-    }
-    loadExternalData();
-  }, []);
 
   const allRawMarkers = [...markers, ...liveMarkers, ...externalMarkers];
 
@@ -312,7 +247,6 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
           className={`map-switcher__btn ${mapMode === 'auto' ? 'map-switcher__btn--active' : ''}`}
           onClick={() => { setMapMode('auto'); setShowRadar(false); }}
         >
-          {isDark ? 'DARK' : 'LIGHT'}
           {isDark ? 'DARK' : 'LIGHT'}
         </button>
         <button

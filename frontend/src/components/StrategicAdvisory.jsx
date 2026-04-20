@@ -13,7 +13,8 @@ export default function StrategicAdvisory() {
       try {
         const data = await getStrategicAdvisory(language);
         setAdvisory(data.advisory);
-      } catch (err) {
+        // eslint-disable-next-line no-unused-vars
+      } catch (_err) {
         setAdvisory(language === 'en' ? 'Unable to retrieve SitRep.' : 'Gagal mendapatkan SitRep.');
       } finally {
         setLoading(false);

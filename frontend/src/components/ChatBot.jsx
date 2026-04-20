@@ -56,7 +56,8 @@ export default function ChatBot() {
           return newMsgs;
         });
       }
-    } catch (err) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_err) {
       setLoading(false);
       setLoading(false);
       setMessages(prev => [...prev, { sender: 'ai', text: 'Error connecting to AI service.' }]);

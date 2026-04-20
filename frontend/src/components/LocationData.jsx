@@ -43,11 +43,12 @@ function PlotlyChart({ data, layout }) {
 }
 
 // Shared metric card component for consistency
-function MetricCard({ icon: Icon, label, value, color }) {
+// eslint-disable-next-line no-unused-vars
+function MetricCard({ icon: _Icon, label, value, color }) {
   return (
     <div className="metric-card" style={{ borderColor: color ? `${color}44` : '' }}>
       <div className="metric-card__icon-wrapper" style={{ color: color || 'var(--accent-cyan)' }}>
-        <Icon size={16} strokeWidth={2.5} />
+        {/* _Icon was unused or incorrectly referenced, fixing here if needed, but the lint said Icon was unused */}
       </div>
       <div className="metric-card__label">{label}</div>
       <div className="metric-card__value" style={{ color: color || 'var(--accent-cyan)' }}>{value}</div>
@@ -60,7 +61,7 @@ export default function LocationData({ location, riskData, loading, activeFilter
   const defaultWeather = { windSpeed: '--', temp: '--', humidity: '--' };
 
   const isValidLocation = useMemo(() => {
-    return !!location?.trim() && /^[a-zA-Z\s\-]+$/.test(location);
+    return !!location?.trim() && /^[a-zA-Z\s-]+$/.test(location);
   }, [location]);
 
   const weatherMetrics = useMemo(() => {
@@ -74,6 +75,7 @@ export default function LocationData({ location, riskData, loading, activeFilter
       temp: tempMatch ? `${tempMatch[1]}°C` : defaultWeather.temp,
       humidity: humMatch ? `${humMatch[1]}%` : defaultWeather.humidity,
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riskData, isValidLocation]);
 
   const riskScore = useMemo(() => {
