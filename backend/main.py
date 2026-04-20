@@ -61,7 +61,11 @@ async def startup_event():
 # Allow CORS for frontend integration (React/Flutter)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to your actual frontend domain, (https://something.vercel.app)
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://natures-event-zeta.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -325,13 +329,24 @@ async def get_me(token: dict = Depends(verify_token)):
         "email": token.get("email")
     }
 
-@app.get("/api/news", summary="Hybrid AI News Feed (Archived & Real-time)")
+def is_relevant_disaster_news(text: str) -> bool:
+    """
+    Checks if the news text is related to a natural disaster or emergency event.
+    """
+    keywords = [
+        "flood", "disaster", "storm", "rain", "emergency", "monsoon", 
+        "banjir", "hujan", "kilat", "tsunami", "earthquake", "gempa", 
+        "landslide", "runtuh", "weather", "cuaca", "hazard", "nadma", "metmalaysia"
+    ]
+    text_lower = text.lower()
+    return any(k in text_lower for k in keywords)
+
+@app.get("/api/news", summary="Tactical Malaysia-Only News Feed")
 async def get_news_feed():
     import httpx
-    import xml.etree.ElementTree as ET
     from hashlib import md5
     
-    gdacs_url = "https://www.gdacs.org/xml/rss.xml"
+    met_malaysia_url = "https://api.data.gov.my/weather/warning"
     bernama_url = "https://bernama.com/en/rssfeed.php"
     headers = {"User-Agent": "flood-alert-system/1.0"}
     
@@ -339,49 +354,56 @@ async def get_news_feed():
     db = get_db()
 
     async with httpx.AsyncClient() as client:
-        # 1. FETCH BERNAMA (MALAYSIAN LOCAL)
+        # 1. FETCH MET MALAYSIA WARNINGS (OFFICIAL)
         try:
-            res_my = await client.get(bernama_url, headers=headers, timeout=5.0)
-            if res_my.status_code == 200:
-                root = ET.fromstring(res_my.content)
-                items = root.findall(".//item")
-                for item in items[:6]:
-                    title = item.find("title").text if item.find("title") is not None else "Local Update"
-                    link = item.find("link").text if item.find("link") is not None else "#"
-                    # Include current timestamp for fresh items
+            res_met = await client.get(met_malaysia_url, timeout=5.0)
+            if res_met.status_code == 200:
+                data = res_met.json()
+                # Expecting a list or single object based on documentation
+                warnings = data if isinstance(data, list) else [data]
+                for w in warnings:
+                    title = w.get("warning_issue", {}).get("title_en", "Weather Warning")
+                    text = w.get("heading_en", "Active Warning")
+                    # Using issued date as part of ID to avoid duplicates
+                    issued = w.get("warning_issue", {}).get("issued", "")
+                    item_id = md5(f"met_{issued}_{title}".encode()).hexdigest()
+                    
                     live_items.append({
-                        "id": md5(link.encode()).hexdigest(),
-                        "time": "MALAYSIA NEWS",
-                        "text": title,
-                        "url": link,
-                        "tag": "MY: BERNAMA",
-                        "tagColor": "var(--accent-cyan)",
-                        "timestamp": datetime.now(timezone.utc)
-                    })
-        except Exception as e:
-            logger.error(f"Bernama Fetch failed: {e}")
-
-        # 2. FETCH GDACS (GLOBAL DISASTER ALERTS)
-        try:
-            res_intl = await client.get(gdacs_url, headers=headers, timeout=5.0)
-            if res_intl.status_code == 200:
-                root = ET.fromstring(res_intl.content)
-                items = root.findall(".//item")
-                for item in items[:6]:
-                    title = item.find("title").text if item.find("title") is not None else "Global Alert"
-                    link = item.find("link").text if item.find("link") is not None else "#"
-                    clean_title = title.replace("Green ", "").replace("Orange ", "🚨 ").replace("Red ", "🔥 ")
-                    live_items.append({
-                        "id": md5(link.encode()).hexdigest(),
-                        "time": "INTERNATIONAL",
-                        "text": clean_title,
-                        "url": link,
-                        "tag": "GLOBAL ALERT",
+                        "id": item_id,
+                        "time": "MET MALAYSIA",
+                        "text": f"{title}: {text}",
+                        "url": "https://www.met.gov.my",
+                        "tag": "OFFICIAL ALERT",
                         "tagColor": "var(--accent-red)",
                         "timestamp": datetime.now(timezone.utc)
                     })
         except Exception as e:
-            logger.error(f"GDACS Fetch failed: {e}")
+            logger.error(f"MetMalaysia Fetch failed: {e}")
+
+        # 2. FETCH BERNAMA (MALAYSIAN LOCAL)
+        try:
+            import xml.etree.ElementTree as ET
+            res_my = await client.get(bernama_url, headers=headers, timeout=5.0)
+            if res_my.status_code == 200:
+                root = ET.fromstring(res_my.content)
+                items = root.findall(".//item")
+                for item in items:
+                    title = item.find("title").text if item.find("title") is not None else "Local Update"
+                    link = item.find("link").text if item.find("link") is not None else "#"
+                    
+                    if is_relevant_disaster_news(title):
+                        secure_link = link.replace("http://", "https://")
+                        live_items.append({
+                            "id": md5(secure_link.encode()).hexdigest(),
+                            "time": "MALAYSIA NEWS",
+                            "text": title,
+                            "url": secure_link,
+                            "tag": "MY: BERNAMA",
+                            "tagColor": "var(--accent-cyan)",
+                            "timestamp": datetime.now(timezone.utc)
+                        })
+        except Exception as e:
+            logger.error(f"Bernama Fetch failed: {e}")
 
     # 3. ARCHIVE TO FIRESTORE (DE-DUPLICATED)
     if db:
@@ -439,3 +461,10 @@ async def get_news_feed():
 
     # Fallback to live items if DB fails
     return live_items if live_items else [{"time": "OFFLINE", "text": "Disaster feeds temporarily unavailable.", "url": "#", "tag": "SYSTEM", "tagColor": "var(--accent-gray)"}]
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    # Cloud Run dynamically assigns a port via the PORT environment variable.
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
