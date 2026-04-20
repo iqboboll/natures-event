@@ -31,7 +31,7 @@ if gcp_project:
     except Exception as e:
         logger.error(f"⚠️ Vertex AI not ready yet: {e}")
 
-GEMINI_MODEL = "gemini-1.5-flash-001"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 # Helper to get the Vertex Gemini client
 def get_gemini_client():
@@ -304,10 +304,11 @@ async def get_strategic_advisory_text(news_items: list, lang: str = "en") -> str
     """
 
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash-001",
+        response = await client.aio.models.generate_content(
+            model=GEMINI_MODEL,
             contents=prompt
         )
+        logger.info("✅ SITREP Generation successful by Gemini (Vertex)")
         return response.text.strip()
     except Exception as e:
         logger.error(f"SITREP Generation failed: {e}")
