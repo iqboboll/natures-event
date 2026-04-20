@@ -144,6 +144,12 @@ async def get_external_hazards():
     events = await get_all_external_hazards()
     return events
 
+@app.get("/api/external-hazards", summary="Fetch Real-time External Hazards")
+async def get_external_hazards():
+    from external_apis import get_all_external_hazards
+    events = await get_all_external_hazards()
+    return events
+
 @app.post("/api/report")
 async def report_hazard(
     location: str = Form(...), 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Wind, Thermometer, Droplets } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 

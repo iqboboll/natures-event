@@ -21,6 +21,7 @@ export default function AlertSummary() {
       } catch (error) {
         console.error("Failed to fetch news:", error);
         setNews([]);
+        setNews([]);
       } finally {
         setLoading(false);
       }

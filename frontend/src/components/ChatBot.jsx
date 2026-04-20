@@ -58,6 +58,7 @@ export default function ChatBot() {
       }
     } catch (err) {
       setLoading(false);
+      setLoading(false);
       setMessages(prev => [...prev, { sender: 'ai', text: 'Error connecting to AI service.' }]);
     }
   };

@@ -49,6 +49,30 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 function createIcon(colorObj, pulse = false) {
   const { hex } = colorObj;
   return L.divIcon({
@@ -182,6 +206,14 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
   // FIX #1: Build a stable key so MapContainer re-mounts when tiles change
   const mapKey = `${mapMode}-${isDark ? 'dark' : 'light'}`;
 
+  // FIX #2: Resolve tile URL based on mode + theme
+  const resolvedTileUrl =
+    mapMode === 'street' ? STREET_TILES :
+      isDark ? DARK_TILES : LIGHT_TILES;
+
+  // FIX #1: Build a stable key so MapContainer re-mounts when tiles change
+  const mapKey = `${mapMode}-${isDark ? 'dark' : 'light'}`;
+
   // Add real-time reports to markers
   const [liveMarkers, setLiveMarkers] = useState([]);
   useEffect(() => {
@@ -189,6 +221,36 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
     return onSnapshot(q, (snapshot) => {
       setLiveMarkers(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, label: `REPORT: ${doc.data().text || doc.data().type}` })));
     });
+  }, []);
+
+  const [externalMarkers, setExternalMarkers] = useState([]);
+
+  useEffect(() => {
+    async function loadExternalData() {
+      const data = await fetchExternalHazards();
+      if (data && data.length > 0) {
+        const mapped = data.map(item => {
+          let type = 'medical';
+          if (item.source === 'USGS' || item.type.toLowerCase().includes('earthquake')) type = 'earthquake';
+          else if (item.type.toLowerCase().includes('fire')) type = 'wildfire';
+          else if (item.type.toLowerCase().includes('storm') || item.type.toLowerCase().includes('monsoon')) type = 'monsoon';
+          else if (item.type.toLowerCase().includes('flood')) type = 'flood';
+
+          let severity = 'Medium';
+          if (item.mag && item.mag >= 5.0) severity = 'High';
+
+          return {
+            id: `ext-${Math.random()}`,
+            pos: [item.lat, item.lon],
+            type,
+            label: `[${item.source}] ${item.title}`,
+            severity,
+          };
+        });
+        setExternalMarkers(mapped);
+      }
+    }
+    loadExternalData();
   }, []);
 
   const [externalMarkers, setExternalMarkers] = useState([]);
@@ -241,6 +303,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
 
   return (
     <div className={`map-area`}>
+      {/* CyberScan Overlay */}
       {isScanning && <div className="radar-scan" />}
 
       {/* Map Mode Switcher — FIX #1: Proper toggle (clicking active = back to auto) */}
@@ -249,6 +312,7 @@ export default function MapView({ onSearch, onReset, activeFilter, setActiveFilt
           className={`map-switcher__btn ${mapMode === 'auto' ? 'map-switcher__btn--active' : ''}`}
           onClick={() => { setMapMode('auto'); setShowRadar(false); }}
         >
+          {isDark ? 'DARK' : 'LIGHT'}
           {isDark ? 'DARK' : 'LIGHT'}
         </button>
         <button

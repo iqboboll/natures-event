@@ -14,6 +14,11 @@ export default function Header({
   // FIX #3: Hover-reveal search bar state
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchVal, setSearchVal] = useState('');
+  const [locDropdownOpen, setLocDropdownOpen] = useState(false);
+
+  // FIX #3: Hover-reveal search bar state
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [searchVal, setSearchVal] = useState('');
 
   // Auto-update timestamp every second
   useEffect(() => {
@@ -180,6 +185,76 @@ export default function Header({
         )}
       </div>
 
+      {/* FIX #3: Hover-reveal Search Bar (Desktop) */}
+      <div
+        className={`header__search ${searchExpanded ? 'header__search--expanded' : ''}`}
+        onMouseEnter={() => setSearchExpanded(true)}
+        onMouseLeave={() => { if (!searchVal) setSearchExpanded(false); }}
+      >
+        <button
+          className="header__search-icon"
+          onClick={() => setSearchExpanded(prev => !prev)}
+          title="Search location"
+        >
+          🔍
+        </button>
+        {searchExpanded && (
+          <div className="header__search-bar fade-in">
+            <input
+              className="header__search-input"
+              placeholder="Search location..."
+              value={searchVal}
+              onChange={e => setSearchVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+              autoFocus
+            />
+            <button className="header__search-go" onClick={handleSearchSubmit}>GO</button>
+            <button className="header__search-go" title="GPS Search" style={{ background: 'transparent', color: 'var(--accent-cyan)' }} onClick={onGetLocation}>📍</button>
+            {searchVal && (
+              <>
+                <button className="header__search-go" title="Save Location" style={{ background: 'transparent', color: 'var(--accent-gold)' }} onClick={onSaveLocation}>⭐</button>
+                <button className="header__search-clear" onClick={handleSearchReset}>✕</button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* FIX #3: Hover-reveal Search Bar (Desktop) */}
+      <div
+        className={`header__search ${searchExpanded ? 'header__search--expanded' : ''}`}
+        onMouseEnter={() => setSearchExpanded(true)}
+        onMouseLeave={() => { if (!searchVal) setSearchExpanded(false); }}
+      >
+        <button
+          className="header__search-icon"
+          onClick={() => setSearchExpanded(prev => !prev)}
+          title="Search location"
+        >
+          🔍
+        </button>
+        {searchExpanded && (
+          <div className="header__search-bar fade-in">
+            <input
+              className="header__search-input"
+              placeholder="Search location..."
+              value={searchVal}
+              onChange={e => setSearchVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+              autoFocus
+            />
+            <button className="header__search-go" onClick={handleSearchSubmit}>GO</button>
+            <button className="header__search-go" title="GPS Search" style={{ background: 'transparent', color: 'var(--accent-cyan)' }} onClick={onGetLocation}>📍</button>
+            {searchVal && (
+              <>
+                <button className="header__search-go" title="Save Location" style={{ background: 'transparent', color: 'var(--accent-gold)' }} onClick={onSaveLocation}>⭐</button>
+                <button className="header__search-clear" onClick={handleSearchReset}>✕</button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Right Section: Timestamp, Status, Login, Theme, Lang (Desktop) */}
       <div className="header__right">
         <span className="header__timestamp telemetry">{t('lastSync')}: {formattedTime}</span>
@@ -196,6 +271,12 @@ export default function Header({
 
         <button className="header__login-btn" onClick={onLoginClick}>
           {t('loginRegister')}
+        </button>
+        <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+          {notificationsEnabled ? '🔕' : '🔔'}
+        </button>
+        <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+          {notificationsEnabled ? '🔕' : '🔔'}
         </button>
         <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
           {notificationsEnabled ? '🔕' : '🔔'}
@@ -240,11 +321,11 @@ export default function Header({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', padding: '5px 0' }}>
             {regionsList.slice(0, 6).map(r => (
               <button
-                key={r.key}
-                className={`header__nav-btn ${activeRegion === r.key ? 'header__nav-btn--active' : ''}`}
-                onClick={() => { setActiveRegion(r.key); onSearch(r); setMenuOpen(false); }}
+                key={r}
+                className={`header__nav-btn ${activeRegion === r ? 'header__nav-btn--active' : ''}`}
+                onClick={() => { setActiveRegion(r); onSearch(r); setMenuOpen(false); }}
               >
-                {r.label}
+                {r}
               </button>
             ))}
             <span style={{ fontSize: '10px', alignSelf: 'center', color: '#889' }}>...</span>
@@ -255,26 +336,52 @@ export default function Header({
           <button className={`header__nav-btn ${activeRegion === 'MY LOCATIONS' ? 'header__nav-btn--active' : ''}`} onClick={() => { setActiveRegion('MY LOCATIONS'); setMenuOpen(false); }}>
             ⭐ MY LOCATIONS (5KM FILTER)
           </button>
-        </nav>
-        <div className="header__right">
-          <button className="header__nav-btn" style={{ width: '100%' }} onClick={toggleLanguage}>
-            LANGUAGE: {language === 'en' ? 'ENGLISH' : 'BAHASA MELAYU'}
-          </button>
-          <span className="header__timestamp">{t('lastSync')}: {formattedTime}</span>
-          <span className="header__status header__status--high">{t('highAlert')}</span>
-          <button className="header__login-btn" onClick={() => { onLoginClick(); setMenuOpen(false); }}>
-            {t('loginRegister')}
-          </button>
-          <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
-            {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
-          </button>
-          <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
-            {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
-          </button>
-          <button className="header__theme-btn" onClick={onThemeToggle} title="Toggle theme">
-            {isDark ? 'Theme: Dark' : 'Theme: Light'}
-          </button>
-        </div>
+          <nav className="header__nav" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div style={{ color: 'var(--accent-cyan)', fontSize: '12px', marginTop: '10px' }}>REGIONS</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', padding: '5px 0' }}>
+              {regionsList.slice(0, 6).map(r => (
+                <button
+                  key={r.key}
+                  className={`header__nav-btn ${activeRegion === r.key ? 'header__nav-btn--active' : ''}`}
+                  onClick={() => { setActiveRegion(r.key); onSearch(r); setMenuOpen(false); }}
+                >
+                  {r.label}
+                </button>
+              ))}
+              <span style={{ fontSize: '10px', alignSelf: 'center', color: '#889' }}>...</span>
+            </div>
+            <button className="header__nav-btn" onClick={() => { setActiveRegion('DISTRICT'); onGetLocation(); setMenuOpen(false); }}>
+              📍 FIND MY DISTRICT
+            </button>
+            <button className={`header__nav-btn ${activeRegion === 'MY LOCATIONS' ? 'header__nav-btn--active' : ''}`} onClick={() => { setActiveRegion('MY LOCATIONS'); setMenuOpen(false); }}>
+              ⭐ MY LOCATIONS (5KM FILTER)
+            </button>
+          </nav>
+          <div className="header__right">
+            <button className="header__nav-btn" style={{ width: '100%' }} onClick={toggleLanguage}>
+              LANGUAGE: {language === 'en' ? 'ENGLISH' : 'BAHASA MELAYU'}
+            </button>
+            <span className="header__timestamp">{t('lastSync')}: {formattedTime}</span>
+            <span className="header__status header__status--high">{t('highAlert')}</span>
+            <button className="header__login-btn" onClick={() => { onLoginClick(); setMenuOpen(false); }}>
+              {t('loginRegister')}
+            </button>
+            <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+              {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
+            </button>
+            <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+              {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
+            </button>
+            <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+              {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
+            </button>
+            <button className="header__theme-btn" onClick={onToggleNotifications} title="Toggle Notifications">
+              {notificationsEnabled ? 'Notifications: ON' : 'Notifications: OFF'}
+            </button>
+            <button className="header__theme-btn" onClick={onThemeToggle} title="Toggle theme">
+              {isDark ? 'Theme: Dark' : 'Theme: Light'}
+            </button>
+          </div>
       </div>
     </header>
   );
