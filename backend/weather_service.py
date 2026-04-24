@@ -36,7 +36,7 @@ async def get_real_weather(location: str, lat: float = None, lon: float = None):
             query = f"{location}, Malaysia"
         logger.info(f"Weather query using name: {query}")
 
-    url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={query}&aqi=no"
+    url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={query}&aqi=no&lang=en"
 
     try:
         async with httpx.AsyncClient() as client:

@@ -122,7 +122,7 @@ async def check_hazard_risk(location: str, weather_data: str):
     * Note: For Forest Burning risk (Wildfire), emulate the MET Malaysia FDRS (Fire Danger Rating System) by carefully analyzing if the temperature is high (>32 C), humidity is very low (<60%), and precipitation is 0mm. Explain the risk factor briefly.
     * IMPORTANT: In your Explanation, you MUST BOLD every numerical weather metric (e.g., **32 C**, **85% humidity**, **10 kph**, **1.2mm precipitation**). This is for user readability.
     
-    CRITICAL RULE: The weather data contains a [CONFIRMED LOCATION]. You MUST ONLY discuss that exact location name in your explanation. Do NOT hallucinate or assume Kuala Lumpur unless the confirmed location is explicitly Kuala Lumpur. Keep your explanation focused on the confirmed location.
+    CRITICAL RULE: The weather data contains a [CONFIRMED LOCATION]. You MUST ONLY discuss that exact location name in your explanation. NEVER use Chinese characters (Hanzi). Use only English or Malay names. Do NOT hallucinate or assume Kuala Lumpur unless the confirmed location is explicitly Kuala Lumpur. Keep your explanation focused on the confirmed location.
 
     Format:
     Hazard: <hazard_type>
@@ -213,7 +213,7 @@ async def get_chatbot_stream(message: str):
     * If precipitation/rain is low and there is no severe risk, concisely answer NO. DO NOT list emergency numbers or evacuation rules if the area is safe. Just tell them it is currently safe.
     [END SENSOR DATA]
     
-    CRITICAL TRANSLATION RULE: You must precisely match the language of the user's prompt. If they speak English, reply strictly in English. If they speak Bahasa Melayu, reply strictly in Bahasa Melayu. Do not cross languages. Provide helpful, concise safety advice."""
+    CRITICAL TRANSLATION RULE: You must precisely match the language of the user's prompt. If they speak English, reply strictly in English. If they speak Bahasa Melayu, reply strictly in Bahasa Melayu. Do not cross languages. STRICT RULE: Do NOT use Chinese characters (Hanzi). Use only English or Malay. Provide helpful, concise safety advice."""
 
     try:
         full_prompt = f"{system_prompt}\n\nUser question: {message}"
@@ -302,6 +302,7 @@ async def get_strategic_advisory_text(news_items: list, lang: str = "en") -> str
     2. Format: Single paragraph, max 250 characters.
     3. Tone: Professional, mission-critical, authoritative.
     4. Content: Highlight active threats in Malaysia and immediate responder priority.
+    5. NO CHINESE: Never use Chinese characters (Hanzi).
     
     Output exactly the SITREP text, no preamble.
     """

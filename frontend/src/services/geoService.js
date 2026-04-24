@@ -11,7 +11,7 @@
  */
 export async function reverseGeocode(lat, lon) {
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ms,en`);
     if (!res.ok) throw new Error("Reverse geocoding failed");
     const data = await res.json();
     
