@@ -32,7 +32,7 @@ if gcp_project:
     except Exception as e:
         logger.error(f"⚠️ Vertex AI not ready yet: {e}")
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-1.5-flash"
 
 # Helper to get the Vertex Gemini client
 def get_gemini_client():
@@ -166,7 +166,7 @@ def _parse_hazard_response(text: str):
 async def get_chatbot_stream(message: str):
     client, _ = get_gemini_client()
     if not client:
-        yield "System: AI provider keys not configured. Please listen to local authorities and head to higher ground if instructed."
+        yield "System: AI provider keys not configured. Please listen to local authorities and head to higher ground if instructed." if "malaysia" not in message.lower() else "Sistem: Kunci penyedia AI tidak dikonfigurasi. Sila dengar arahan pihak berkuasa tempatan dan pergi ke kawasan tinggi jika diarahkan."
         return
         
     # --- RAG IMPLEMENTATION ---
@@ -227,7 +227,7 @@ async def get_chatbot_stream(message: str):
         logger.info("✅ Chatbot Response Stream completed by Gemini (Vertex)")
     except Exception as e:
         logger.error(f"Gemini chatbot streaming error: {e}")
-        yield f"Error: Vertex Gemini service is unavailable. Please try again later."
+        yield "Error: Vertex Gemini service is unavailable. Please try again later." if "malaysia" not in message.lower() else "Ralat: Perkhidmatan Vertex Gemini tidak tersedia. Sila cuba sebentar lagi."
 
 
 # ============================================================

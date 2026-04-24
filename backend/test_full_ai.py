@@ -1,7 +1,7 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from ai_service import get_gemini_client, get_chatbot_response, check_hazard_risk
+from ai_service import get_gemini_client, get_chatbot_stream, check_hazard_risk
 
 async def test_triple_safe():
     load_dotenv()
@@ -29,8 +29,10 @@ async def test_triple_safe():
     print("\n[Test 2] Testing Chatbot Response...")
     await asyncio.sleep(2) # Give the network a second to breathe
     try:
-        response = await get_chatbot_response("Is there a flood in Johor right now?")
-        print(f"Chatbot says: {response[:100]}...")
+        response_text = ""
+        async for chunk in get_chatbot_stream("Is there a flood in Johor right now?"):
+            response_text += chunk
+        print(f"Chatbot says: {response_text[:100]}...")
         print("✅ SUCCESS: Chatbot responded correctly.")
     except Exception as e:
         print(f"❌ FAILED: Chatbot error: {e}")
