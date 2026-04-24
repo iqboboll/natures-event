@@ -24,13 +24,13 @@ gcp_project = os.getenv("GCP_PROJECT_ID")
 gcp_location = os.getenv("GCP_LOCATION", "asia-southeast1")
 gemini_client_vertex = None
 
-# 🚀 1. Attempt Vertex AI (Uses GCP Credits)
-if gcp_project:
-    try:
-        gemini_client_vertex = genai.Client(vertexai=True, project=gcp_project, location=gcp_location)
-        logger.info(f"🚀 Gemini Vertex AI Ready (Project: {gcp_project})")
-    except Exception as e:
-        logger.error(f"⚠️ Vertex AI not ready yet: {e}")
+# 🚀 1. Attempt Vertex AI (Uses GCP Credits or Default Environment Credentials)
+try:
+    # Initialize Client. If project is None, SDK will try to auto-detect from environment (Cloud Run/Vertex AI)
+    gemini_client_vertex = genai.Client(vertexai=True, project=gcp_project, location=gcp_location)
+    logger.info(f"🚀 Gemini Vertex AI Ready (Project: {gcp_project or 'Auto-detected'})")
+except Exception as e:
+    logger.error(f"⚠️ Vertex AI initialization failed: {e}")
 
 GEMINI_MODEL = "gemini-1.5-flash"
 
