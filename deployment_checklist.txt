@@ -1,0 +1,49 @@
+# Natures-Event Guardian Platform: Cloud Run Deployment Checklist
+
+To deploy the platform manually to Google Cloud Run, ensure the following files are present in your deployment context.
+
+## 🐍 Backend (FastAPI)
+These files are required to build and run the backend container.
+
+### Core Application
+- [ ] `main.py` (Entry point)
+- [ ] `requirements.txt` (Dependencies)
+- [ ] `ai_service.py` (Gemini/Vertex AI logic)
+- [ ] `weather_service.py` (Weather API logic)
+- [ ] `database.py` (Firestore initialization)
+- [ ] `cache.py` (In-memory caching)
+- [ ] `external_apis.py` (MetMalaysia/USGS/NASA logic)
+- [ ] `utils.py` (Shared helpers)
+- [ ] `routers/` (Full directory containing `auth.py`, `risk.py`, `news.py`, `chat.py`)
+
+### Configuration & Secrets (CRITICAL)
+- [ ] `.env` (Contains API keys and project settings)
+- [ ] `firebase-service-account.json` (Firebase Admin SDK credentials)
+- [ ] `flood-risk-f3fae-f1e657183174.json` (Google Cloud Service Account key)
+
+### Containerization (CONSOLIDATED)
+- [ ] `Dockerfile` (Located in root; contains both Frontend and Backend instructions)
+- [ ] `.dockerignore` (Located in root; unified exclusions)
+
+---
+
+## 🛠️ Manual Deployment Commands
+To deploy using the unified Dockerfile, specify the target for each service:
+
+```bash
+# 1. Build & Push Backend
+docker build --target backend -t gcr.io/<PROJECT_ID>/guardian-backend .
+docker push gcr.io/<PROJECT_ID>/guardian-backend
+gcloud run deploy guardian-backend --image gcr.io/<PROJECT_ID>/guardian-backend --region <YOUR_REGION>
+
+# 2. Build & Push Frontend
+docker build --target frontend -t gcr.io/<PROJECT_ID>/guardian-frontend .
+docker push gcr.io/<PROJECT_ID>/guardian-frontend
+gcloud run deploy guardian-frontend --image gcr.io/<PROJECT_ID>/guardian-frontend --region <YOUR_REGION>
+```
+
+> [!TIP]
+> You can now deploy from the root directory using a single `Dockerfile`. The backend remains the default stage if no target is specified.
+
+> [!WARNING]
+> Ensure that `.env` and `.json` secret files are NOT committed to public version control (GitHub), but they MUST be present in the local directory when running the manual `gcloud deploy` command so they can be included in the build.

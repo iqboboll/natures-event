@@ -1,0 +1,45 @@
+# Ignore version control and secrets
+.git
+.gitignore
+.env
+*.env
+secrets.json
+*.json.bak
+
+# Ignore Node.js dependencies and builds
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore Python artifacts and environments
+__pycache__
+**/__pycache__
+venv
+**/venv
+.pytest_cache
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore IDE settings
+.vscode
+.idea
+
+# Ignore component-specific Docker files (consolidated to root)
+backend/Dockerfile
+backend/.dockerignore
+frontend/Dockerfile
+frontend/.dockerignore
+
+# Ignore root artifacts
+Dockerfile
+.dockerignore
+WALKTHROUGH.md
+README.md
+deployment_checklist.txt
