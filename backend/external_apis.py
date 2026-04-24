@@ -17,24 +17,6 @@ def is_in_malaysia(lat: float, lon: float) -> bool:
     """Filter coordinates to ensure they fall within the Malaysian geographic region."""
     return MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON
 
-async def fetch_metmalaysia() -> List[Dict[str, Any]]:
-    """
-    MetMalaysia: For local weather forecasts and monsoon warnings.
-    Placeholder API fetch setup.
-    """
-    METMALAYSIA_API_KEY = "YOUR_METMALAYSIA_API_KEY"
-    events = []
-    # Placeholder logic for when MetMalaysia credentials are added
-    # url = f"https://api.met.gov.my/v2.1/data?datasetid=FORECAST&token={METMALAYSIA_API_KEY}"
-    # try:
-    #     async with httpx.AsyncClient() as client:
-    #         resp = await client.get(url, timeout=5.0)
-    #         # Parse logic...
-    # except Exception as e:
-    #     logger.error(f"MetMalaysia Fetch Failed: {e}")
-    
-    return events
-
 async def fetch_usgs_earthquakes() -> List[Dict[str, Any]]:
     """Fetch recent earthquakes from USGS Earthquake Catalog, filtered to Malaysia."""
     url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
