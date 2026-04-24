@@ -7,6 +7,9 @@ from weather_service import get_real_weather
 from ai_service import check_hazard_risk
 from cache import RISK_CACHE, CACHE_EXPIRATION_MINUTES
 from routers import auth, risk, news, chat
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -64,13 +67,24 @@ app.include_router(risk.router)
 app.include_router(news.router)
 app.include_router(chat.router)
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Guardian Tactical Backend is online.",
-        "version": "2.1.0",
-        "status": "Operational"
-    }
+
+# 1. Mount the folder where the React build sits
+# This folder is created by the Dockerfile 'COPY' command
+# Check if static directory exists to avoid errors during local dev without build
+if os.path.exists("static"):
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+
+# 2. The "Catch-All" route
+# If the user visits the site, send them the React index.html
+@app.get("/{catchall:path}")
+async def serve_react(catchall: str):
+    index_path = os.path.join("static", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    # If API route is not found, return 404 instead of index if it starts with /api
+    if catchall.startswith("api"):
+        return {"error": "API route not found"}
+    return {"message": "Guardian Tactical Backend is online. Frontend build not detected."}
 
 if __name__ == "__main__":
     import uvicorn

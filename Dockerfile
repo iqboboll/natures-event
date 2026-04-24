@@ -39,6 +39,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend project files
 COPY backend/ .
 
+# Copy built frontend assets into the static directory for FastAPI to serve
+COPY --from=frontend-builder /app/dist ./static
+
 # Expose port 8080 (Cloud Run default)
 EXPOSE 8080
 

@@ -7,3 +7,4 @@ httpx
 firebase-admin
 pydantic
 google-cloud-aiplatform
+aiofiles
